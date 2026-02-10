@@ -1,12 +1,14 @@
 -- [[ 
-    SORONICE UI LIBRARY - VERSION V5 ULTIME (NON COMPRESSÉE)
+    SORONICE UI LIBRARY - VERSION V2 ULTIME (NON COMPRESSÉE)
     Script entièrement détaillé et étendu pour une lisibilité maximale.
     Intègre : Login System, AFK Invisible, Réglages, Dragging Sécurisé.
+    Développé pour Soronice Hub.
 ]] --
 
 local SoroniceLib = {}
 
 -- :: SERVICES ROBLOX :: --
+-- Nous récupérons tous les services nécessaires au fonctionnement du script
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
@@ -20,15 +22,19 @@ local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 
 -- :: CONFIGURATION GLOBALE PAR DÉFAUT :: --
+-- Ces paramètres peuvent être modifiés via le menu réglages
 local Settings = {
-    Keybind = Enum.KeyCode.P, -- Touche par défaut pour ouvrir/fermer
+    Keybind = Enum.KeyCode.P, -- Touche par défaut pour ouvrir/fermer le menu
     ThemeColor = Color3.fromRGB(20, 20, 20), -- Couleur de fond sombre
-    AccentColor = Color3.fromRGB(0, 54, 203), -- Bleu Soronice
-    ToggleOffColor = Color3.fromRGB(40, 40, 40),
-    TextColor = Color3.fromRGB(255, 255, 255)
+    AccentColor = Color3.fromRGB(0, 54, 203), -- Bleu Soronice (Boutons actifs)
+    ToggleOffColor = Color3.fromRGB(40, 40, 40), -- Couleur quand désactivé
+    TextColor = Color3.fromRGB(255, 255, 255) -- Couleur du texte
 }
 
--- :: GESTION DU SYSTÈME AFK (ANTI-KICK INVISIBLE) :: --
+-- ============================================================================== --
+--                            SYSTÈME AFK (ANTI-KICK)                             --
+-- ============================================================================== --
+
 local AfkEnabled = false
 local AfkConnection = nil
 
@@ -45,7 +51,7 @@ local function ToggleAfk(state)
                 VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
                 wait(1)
                 VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
-                print("[Soronice Hub] Anti-Kick activé : Simulation d'activité.")
+                print("[Soronice Hub] Anti-Kick activé : Simulation d'activité invisible.")
             end
         end)
         
@@ -56,7 +62,7 @@ local function ToggleAfk(state)
             Duration = 5
         })
     else
-        -- Désactivation
+        -- Désactivation : On coupe la connexion
         if AfkConnection then
             AfkConnection:Disconnect()
             AfkConnection = nil
@@ -70,24 +76,27 @@ local function ToggleAfk(state)
     end
 end
 
--- :: FONCTION INTERNE : SYSTÈME DE LOGIN (MOT DE PASSE) :: --
+-- ============================================================================== --
+--                          SYSTÈME DE LOGIN (MOT DE PASSE)                       --
+-- ============================================================================== --
+
 local function SpawnLoginSystem(SettingsLogin)
     local Validated = false
     local RealPassword = SettingsLogin.Key or "1234"
     
-    -- Vérification si la clé est un lien (Raw Text)
+    -- Vérification si la clé doit être récupérée depuis un site web (Raw Text)
     if SettingsLogin.GrabKeyFromSite == true then
         local success, result = pcall(function()
             return game:HttpGet(SettingsLogin.Key)
         end)
         
         if success then
-            -- Nettoyage de la chaîne de caractères (suppression des espaces vides)
+            -- Nettoyage de la chaîne de caractères (suppression des espaces vides et retours à la ligne)
             RealPassword = string.gsub(result, "\n", "")
             RealPassword = string.gsub(RealPassword, " ", "")
             RealPassword = string.gsub(RealPassword, "\r", "")
         else
-            warn("[Soronice Hub] Erreur lors de la récupération de la clé en ligne.")
+            warn("[Soronice Hub] Erreur critique : Impossible de récupérer la clé en ligne.")
         end
     end
 
@@ -97,18 +106,18 @@ local function SpawnLoginSystem(SettingsLogin)
     LoginGui.Parent = CoreGui
     LoginGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     
-    -- Effet de Flou (Blur)
+    -- Effet de Flou (Blur) dans le jeu
     local BlurEffect = Instance.new("BlurEffect")
     BlurEffect.Parent = game.Lighting
     BlurEffect.Size = 24
     
-    -- Cadre Invisible pour le centrage
+    -- Cadre Invisible pour le centrage parfait
     local CenteringFrame = Instance.new("Frame")
     CenteringFrame.Parent = LoginGui
     CenteringFrame.BackgroundTransparency = 1
     CenteringFrame.Size = UDim2.new(1, 0, 1, 0)
     
-    -- Image de Fond (Le Design Vert/Noir)
+    -- Image de Fond (Le Design Vert/Noir que tu as choisi)
     local BackgroundImage = Instance.new("ImageLabel")
     BackgroundImage.Name = "BackgroundImage"
     BackgroundImage.Parent = CenteringFrame
@@ -117,7 +126,7 @@ local function SpawnLoginSystem(SettingsLogin)
     BackgroundImage.BackgroundTransparency = 1.000
     BackgroundImage.Position = UDim2.new(0.5, 0, 0.5, 0)
     BackgroundImage.Size = UDim2.new(0, 500, 0, 350)
-    BackgroundImage.Image = "rbxassetid://114617892791025" -- Ton image spécifique
+    BackgroundImage.Image = "rbxassetid://114617892791025" -- Ton image de fond
     
     -- Titre "ACCÈS PREMIUM"
     local TitleText = Instance.new("TextLabel")
@@ -142,7 +151,7 @@ local function SpawnLoginSystem(SettingsLogin)
     CloseButton.MouseButton1Click:Connect(function()
         LoginGui:Destroy()
         BlurEffect:Destroy()
-        script:Destroy() -- Arrêt total du script
+        script:Destroy() -- Arrêt total du script si on ferme le login
     end)
     
     -- Bouton Réduire (-)
@@ -230,7 +239,7 @@ local function SpawnLoginSystem(SettingsLogin)
     LinkCorner.CornerRadius = UDim.new(0, 10)
     LinkCorner.Parent = LinkBtn
     
-    -- Logique de validation
+    -- Logique de validation du mot de passe
     local function VerifyPassword()
         if PasswordBox.Text == RealPassword then
             Validated = true
@@ -255,29 +264,31 @@ local function SpawnLoginSystem(SettingsLogin)
         end
     end)
     
-    -- Boucle bloquante (Empêche le reste du script de charger)
+    -- Boucle bloquante (Empêche le reste du script de charger tant que le login n'est pas passé)
     repeat wait() until Validated or not LoginGui.Parent
     
     if not Validated then
         script:Destroy()
-        -- Boucle infinie de sécurité pour arrêter l'exécution
+        -- Boucle infinie de sécurité pour arrêter l'exécution si le joueur ferme sans valider
         while true do wait(99999) end
     end
 end
 
 
--- :: DÉBUT DE LA CRÉATION DE LA FENÊTRE PRINCIPALE :: --
+-- ============================================================================== --
+--                        CRÉATION DE LA FENÊTRE PRINCIPALE                       --
+-- ============================================================================== --
 
 function SoroniceLib:CreateWindow(Config)
     
-    -- 1. Lancement du Login si demandé
+    -- 1. Lancement du Login si l'option est activée dans la config
     if Config.KeySystem == true then
         SpawnLoginSystem(Config.KeySettings or {})
     end
 
     local TitleName = Config.Name or "SORONICE HUB"
 
-    -- Nettoyage des anciennes instances pour éviter les doublons
+    -- Nettoyage des anciennes instances pour éviter les doublons dans le CoreGui
     if CoreGui:FindFirstChild("Soronice_V6") then
         CoreGui:FindFirstChild("Soronice_V6"):Destroy()
     end
@@ -372,15 +383,15 @@ function SoroniceLib:CreateWindow(Config)
     MinimizeBtn.TextSize = 24
     
     local IsHidden = false
-    local NotificationShown = false -- Pour afficher le message une seule fois
+    local NotificationShown = false -- Variable pour empêcher le spam de notifications
 
     local function ToggleVisibility()
         IsHidden = not IsHidden
         MainFrame.Visible = not IsHidden
         
+        -- On affiche la notification seulement la première fois qu'on cache le menu
         if IsHidden == true and NotificationShown == false then
             NotificationShown = true
-            -- Récupération du nom de la touche (ex: "P")
             local KeyName = UserInputService:GetStringForKeyCode(Settings.Keybind)
             StarterGui:SetCore("SendNotification", {
                 Title = "Soronice Hub",
@@ -413,7 +424,7 @@ function SoroniceLib:CreateWindow(Config)
     
     CloseBtn.MouseButton1Click:Connect(function()
         ScreenGui:Destroy()
-        -- On peut aussi désactiver le mode AFK en fermant
+        -- On désactive le mode AFK en fermant le hub pour éviter les bugs
         ToggleAfk(false)
     end)
 
@@ -448,7 +459,7 @@ function SoroniceLib:CreateWindow(Config)
     -- Positionné en bas de la sidebar, centré
     local SettingsBtn = Instance.new("TextButton")
     SettingsBtn.Name = "Settings_Btn"
-    SettingsBtn.Parent = MainFrame -- On le met dans MainFrame pour contrôler sa position absolue
+    SettingsBtn.Parent = MainFrame
     SettingsBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     SettingsBtn.BackgroundTransparency = 0.5
     -- Centrage : Sidebar commence à X=10, largeur 60. Milieu = 40.
@@ -466,7 +477,7 @@ function SoroniceLib:CreateWindow(Config)
     SettingsIcon.BackgroundTransparency = 1
     SettingsIcon.Position = UDim2.new(0, 5, 0, 5)
     SettingsIcon.Size = UDim2.new(0, 35, 0, 35)
-    SettingsIcon.Image = "rbxassetid://74182569229556" -- Image du Boulon demandée
+    SettingsIcon.Image = "rbxassetid://74182569229556" -- Image du Boulon que tu m'as donnée
 
     -- PAGE DES RÉGLAGES
     local SettingsPage = Instance.new("ScrollingFrame")
@@ -601,7 +612,7 @@ function SoroniceLib:CreateWindow(Config)
                 end
             end
             
-            -- Initialisation
+            -- Initialisation visuelle
             if Toggled then
                 Knob.Position = UDim2.new(1, -22, 0.5, -10)
                 SwitchBg.BackgroundColor3 = Settings.AccentColor
