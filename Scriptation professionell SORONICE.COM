@@ -1,7 +1,4 @@
---[[ 
-    SORONICE UI LIBRARY (Basé sur ton GUI MPKLM v3.2)
-    Optimisé pour être modifiable à l'infini.
-]]
+-- [[ SORONICE UI LIBRARY CORRIGÉE ]] --
 
 local SoroniceLib = {}
 local UserInputService = game:GetService("UserInputService")
@@ -48,27 +45,31 @@ local function MakeDraggable(topbarobject, object)
 	end)
 end
 
--- :: DÉBUT DE LA LIBRARY :: --
+-- :: DÉBUT DE LA CRÉATION DE FENÊTRE :: --
 
 function SoroniceLib:CreateWindow(Config)
 	local TitleName = Config.Name or "SORONICE HUB"
-	local SubTitleName = Config.Subtitle or "V6"
 	
 	-- 1. Création du ScreenGui Principal
+	-- On vérifie s'il existe déjà pour ne pas avoir de doublons
+	if game.CoreGui:FindFirstChild("SoroniceLib_UI") then
+		game.CoreGui:FindFirstChild("SoroniceLib_UI"):Destroy()
+	end
+
 	local MPKLM = Instance.new("ScreenGui")
 	MPKLM.Name = "SoroniceLib_UI"
-	MPKLM.Parent = game.CoreGui or LocalPlayer:WaitForChild("PlayerGui")
+	MPKLM.Parent = game.CoreGui
 	MPKLM.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	MPKLM.ResetOnSpawn = false
 
-	-- 2. Le Conteneur Principal (Button/Main Frame)
-	local MainContainer = Instance.new("Frame") -- "Button" dans ton script original
+	-- 2. Le Conteneur Principal
+	local MainContainer = Instance.new("Frame")
 	MainContainer.Name = "MainContainer"
 	MainContainer.Parent = MPKLM
 	MainContainer.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 	MainContainer.BackgroundTransparency = 1.000
 	MainContainer.Position = UDim2.new(0.268, 0, 0.179, 0)
-	MainContainer.Size = UDim2.new(0.462, 0, 0.093, 0) -- Taille relative pour le drag
+	MainContainer.Size = UDim2.new(0.462, 0, 0.093, 0)
 
 	-- 3. La fenêtre principale (HJP1)
 	local HJP1 = Instance.new("Frame")
@@ -78,7 +79,7 @@ function SoroniceLib:CreateWindow(Config)
 	HJP1.BackgroundTransparency = 0.600
 	HJP1.Size = UDim2.new(1, 0, 6.979, 0)
     
-    -- On rend la fenêtre déplaçable via HJP1
+    -- Rendre la fenêtre déplaçable
     MakeDraggable(HJP1, MainContainer)
 
 	-- Header (Titre)
@@ -92,24 +93,13 @@ function SoroniceLib:CreateWindow(Config)
 	local TitleLabel = Instance.new("TextLabel")
 	TitleLabel.Parent = HeaderFrame
 	TitleLabel.BackgroundTransparency = 1
-	TitleLabel.Position = UDim2.new(0, 10, 0, 5)
-	TitleLabel.Size = UDim2.new(0.5, 0, 0.6, 0)
+	TitleLabel.Position = UDim2.new(0, 10, 0, 0)
+	TitleLabel.Size = UDim2.new(0.8, 0, 1, 0)
 	TitleLabel.Font = Enum.Font.SourceSansBold
 	TitleLabel.Text = TitleName
 	TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 	TitleLabel.TextScaled = true
 	TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-	local SubTitleLabel = Instance.new("TextLabel")
-	SubTitleLabel.Parent = HeaderFrame
-	SubTitleLabel.BackgroundTransparency = 1
-	SubTitleLabel.Position = UDim2.new(0, 10, 0.6, 0)
-	SubTitleLabel.Size = UDim2.new(0.5, 0, 0.3, 0)
-	SubTitleLabel.Font = Enum.Font.SourceSans
-	SubTitleLabel.Text = SubTitleName
-	SubTitleLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-	SubTitleLabel.TextScaled = true
-	SubTitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
 	-- Bouton Fermer (X)
 	local CloseBtn = Instance.new("TextButton")
@@ -122,6 +112,7 @@ function SoroniceLib:CreateWindow(Config)
 	CloseBtn.Text = "X"
 	CloseBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 	CloseBtn.TextScaled = true
+	
 	CloseBtn.MouseButton1Click:Connect(function()
 		MPKLM:Destroy()
 	end)
@@ -132,11 +123,10 @@ function SoroniceLib:CreateWindow(Config)
 	SidebarFrame.Parent = HJP1
 	SidebarFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 	SidebarFrame.BackgroundTransparency = 0.98
-	SidebarFrame.Position = UDim2.new(0.022, 0, 0.18, 0) -- Ajusté sous le header
+	SidebarFrame.Position = UDim2.new(0.022, 0, 0.18, 0)
 	SidebarFrame.Size = UDim2.new(0.14, 0, 0.78, 0)
 	Instance.new("UICorner", SidebarFrame)
     
-    -- Layout pour les boutons d'onglets
     local SidebarLayout = Instance.new("UIListLayout")
     SidebarLayout.Parent = SidebarFrame
     SidebarLayout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -153,20 +143,26 @@ function SoroniceLib:CreateWindow(Config)
 	local Window = {}
     local FirstTab = true
 
-	function Window:CreateTab(TabConfig)
-		local TabName = TabConfig.Name or "Tab"
-		local TabIcon = TabConfig.Icon or "rbxassetid://4483345998"
+	-- :: FONCTION : Notify (Ajoutée pour compatibilité) ::
+	function SoroniceLib:Notify(Config)
+		-- Simple print pour l'instant ou création d'une petite frame
+		-- Tu peux customiser ça plus tard
+		print("[NOTIF]: " .. (Config.Title or "") .. " - " .. (Config.Content or ""))
+	end
+
+	function Window:CreateTab(TabName, TabIcon)
+		TabName = TabName or "Tab"
+		TabIcon = TabIcon or 0 -- ID Image
 		
 		-- 1. Création du bouton dans la Sidebar
 		local TabButton = Instance.new("TextButton")
 		TabButton.Name = TabName .. "_Btn"
 		TabButton.Parent = SidebarFrame
 		TabButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        -- Si c'est le premier, on le met un peu plus clair, sinon noir
         if FirstTab then 
             TabButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40) 
         end
-		TabButton.Size = UDim2.new(1, 0, 0.15, 0) -- Taille relative
+		TabButton.Size = UDim2.new(1, 0, 0.15, 0)
 		TabButton.Font = Enum.Font.SourceSansBold
 		TabButton.Text = ""
 		TabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -174,22 +170,24 @@ function SoroniceLib:CreateWindow(Config)
 		local TabCorner = Instance.new("UICorner")
 		TabCorner.Parent = TabButton
 		
-		local IconLabel = Instance.new("ImageLabel")
-		IconLabel.Parent = TabButton
-		IconLabel.BackgroundTransparency = 1
-		IconLabel.Position = UDim2.new(0.2, 0, 0.1, 0)
-		IconLabel.Size = UDim2.new(0.6, 0, 0.8, 0)
-		IconLabel.Image = TabIcon
-		IconLabel.ScaleType = Enum.ScaleType.Fit
+        -- Texte de l'onglet (si pas d'icone)
+        local TitleTab = Instance.new("TextLabel")
+        TitleTab.Parent = TabButton
+        TitleTab.BackgroundTransparency = 1
+        TitleTab.Size = UDim2.new(1,0,1,0)
+        TitleTab.Text = TabName
+        TitleTab.TextColor3 = Color3.fromRGB(255,255,255)
+        TitleTab.Font = Enum.Font.SourceSansBold
+        TitleTab.TextSize = 14
 
-		-- 2. Création de la Page (L Frame)
-		local PageFrame = Instance.new("ScrollingFrame") -- ScrollingFrame pour pouvoir mettre plein de trucs
+		-- 2. Création de la Page
+		local PageFrame = Instance.new("ScrollingFrame")
 		PageFrame.Name = TabName .. "_Page"
 		PageFrame.Parent = ContentArea
 		PageFrame.BackgroundTransparency = 1
 		PageFrame.Size = UDim2.new(1, 0, 1, 0)
 		PageFrame.ScrollBarThickness = 4
-        PageFrame.Visible = FirstTab -- Visible seulement si c'est le premier
+        PageFrame.Visible = FirstTab 
         
         local PageLayout = Instance.new("UIListLayout")
         PageLayout.Parent = PageFrame
@@ -198,27 +196,23 @@ function SoroniceLib:CreateWindow(Config)
         
         -- Logique de changement d'onglet
         TabButton.MouseButton1Click:Connect(function()
-            -- Éteindre tous les onglets
             for _, child in pairs(ContentArea:GetChildren()) do
                 if child:IsA("ScrollingFrame") then child.Visible = false end
             end
-            -- Éteindre la couleur de tous les boutons
             for _, btn in pairs(SidebarFrame:GetChildren()) do
                 if btn:IsA("TextButton") then 
                     TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0,0,0)}):Play()
                 end
             end
-            
-            -- Allumer cet onglet
             PageFrame.Visible = true
             TweenService:Create(TabButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(40,40,40)}):Play()
         end)
 
-        FirstTab = false -- Les suivants ne seront pas visibles par défaut
+        FirstTab = false 
 
 		local TabFunctions = {}
 
-		-- :: ÉLÉMENT : BUTTON (Basé sur ton Button_2) :: --
+		-- :: ÉLÉMENT : BUTTON :: --
 		function TabFunctions:CreateButton(BtnConfig)
 			local BtnText = BtnConfig.Name or "Button"
 			local Callback = BtnConfig.Callback or function() end
@@ -228,7 +222,7 @@ function SoroniceLib:CreateWindow(Config)
 			BtnContainer.Parent = PageFrame
 			BtnContainer.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 			BtnContainer.BackgroundTransparency = 1
-			BtnContainer.Size = UDim2.new(1, 0, 0.15, 0) -- Hauteur standard
+			BtnContainer.Size = UDim2.new(1, 0, 0.15, 0)
 
 			local ActualBtn = Instance.new("TextButton")
 			ActualBtn.Parent = BtnContainer
@@ -240,7 +234,6 @@ function SoroniceLib:CreateWindow(Config)
 			ActualBtn.Text = ""
             ActualBtn.ZIndex = 2
 			
-            -- Design Style (Ton style "L1 > 5")
             local VisualFrame = Instance.new("Frame")
             VisualFrame.Parent = ActualBtn
             VisualFrame.Size = UDim2.new(1,0,1,0)
@@ -257,7 +250,6 @@ function SoroniceLib:CreateWindow(Config)
             TextL.TextSize = 18
 
 			ActualBtn.MouseButton1Click:Connect(function()
-                -- Petit effet de clic
                 TweenService:Create(VisualFrame, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(60,60,60)}):Play()
                 wait(0.1)
                 TweenService:Create(VisualFrame, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(30,30,30)}):Play()
@@ -265,7 +257,7 @@ function SoroniceLib:CreateWindow(Config)
 			end)
 		end
 
-		-- :: ÉLÉMENT : TOGGLE (Basé sur ton style On/Off avec Gradient) :: --
+		-- :: ÉLÉMENT : TOGGLE :: --
 		function TabFunctions:CreateToggle(ToggleConfig)
 			local ToggleName = ToggleConfig.Name or "Toggle"
 			local Default = ToggleConfig.CurrentValue or false
@@ -277,7 +269,6 @@ function SoroniceLib:CreateWindow(Config)
 			ToggleContainer.BackgroundTransparency = 1
 			ToggleContainer.Size = UDim2.new(1, 0, 0.18, 0)
 
-            -- Fond sombre
             local Bg = Instance.new("Frame")
             Bg.Parent = ToggleContainer
             Bg.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -285,7 +276,6 @@ function SoroniceLib:CreateWindow(Config)
             Bg.Size = UDim2.new(0.9, 0, 0.8, 0)
             Instance.new("UICorner", Bg).CornerRadius = UDim.new(0, 25)
 
-            -- Texte
             local Label = Instance.new("TextLabel")
             Label.Parent = Bg
             Label.BackgroundTransparency = 1
@@ -297,7 +287,6 @@ function SoroniceLib:CreateWindow(Config)
             Label.TextSize = 16
             Label.TextXAlignment = Enum.TextXAlignment.Left
 
-            -- Le Switch (Knob)
             local SwitchBg = Instance.new("Frame")
             SwitchBg.Parent = Bg
             SwitchBg.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
@@ -311,15 +300,6 @@ function SoroniceLib:CreateWindow(Config)
             Knob.Size = UDim2.new(0.4, 0, 0.9, 0)
             Knob.Position = UDim2.new(0.05, 0, 0.05, 0)
             Instance.new("UICorner", Knob).CornerRadius = UDim.new(1, 0)
-            
-            -- Gradient sur le Knob (style MPKLM)
-            local UIGradient = Instance.new("UIGradient")
-            UIGradient.Color = ColorSequence.new{
-                ColorSequenceKeypoint.new(0.00, Color3.fromRGB(254, 224, 255)),
-                ColorSequenceKeypoint.new(1.00, Color3.fromRGB(240, 210, 248))
-            }
-            UIGradient.Rotation = -45
-            UIGradient.Parent = Knob
 
             local Toggled = Default
             local IsAnimating = false
@@ -327,16 +307,10 @@ function SoroniceLib:CreateWindow(Config)
             local function UpdateToggle()
                 IsAnimating = true
                 if Toggled then
-                    -- Animation vers ON (Déplacement à droite + Couleur SwitchBg)
                     TweenService:Create(Knob, TweenInfo.new(0.3), {Position = UDim2.new(0.55, 0, 0.05, 0)}):Play()
                     TweenService:Create(SwitchBg, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(106, 0, 255)}):Play()
-                    
-                    -- Lancement de la boucle utilisateur
-                    task.spawn(function()
-                        Callback(true)
-                    end)
+                    task.spawn(function() Callback(true) end)
                 else
-                    -- Animation vers OFF
                     TweenService:Create(Knob, TweenInfo.new(0.3), {Position = UDim2.new(0.05, 0, 0.05, 0)}):Play()
                     TweenService:Create(SwitchBg, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(15, 15, 15)}):Play()
                     Callback(false)
@@ -345,7 +319,6 @@ function SoroniceLib:CreateWindow(Config)
                 IsAnimating = false
             end
             
-            -- Initialisation si par défaut = true
             if Default then 
                 Knob.Position = UDim2.new(0.55, 0, 0.05, 0)
                 SwitchBg.BackgroundColor3 = Color3.fromRGB(106, 0, 255)
@@ -365,7 +338,7 @@ function SoroniceLib:CreateWindow(Config)
             end)
 		end
 
-		-- :: ÉLÉMENT : SLIDER (Basé sur SPJI) :: --
+		-- :: ÉLÉMENT : SLIDER :: --
 		function TabFunctions:CreateSlider(SliderConfig)
 			local SliderName = SliderConfig.Name or "Slider"
 			local Min = SliderConfig.Range[1] or 0
@@ -379,7 +352,6 @@ function SoroniceLib:CreateWindow(Config)
 			SliderFrame.BackgroundTransparency = 1
 			SliderFrame.Size = UDim2.new(1, 0, 0.18, 0)
 
-            -- Titre du slider
             local Title = Instance.new("TextLabel")
             Title.Parent = SliderFrame
             Title.BackgroundTransparency = 1
@@ -390,7 +362,6 @@ function SoroniceLib:CreateWindow(Config)
             Title.TextColor3 = Color3.fromRGB(255, 255, 255)
             Title.TextXAlignment = Enum.TextXAlignment.Left
 
-            -- Barre de fond (Barre noire)
 			local BarBg = Instance.new("Frame")
 			BarBg.Parent = SliderFrame
             BarBg.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -398,7 +369,6 @@ function SoroniceLib:CreateWindow(Config)
             BarBg.Size = UDim2.new(0.8, 0, 0.4, 0)
             Instance.new("UICorner", BarBg).CornerRadius = UDim.new(0, 25)
 
-            -- Barre de remplissage (Fill) - Style Bleu/Néon
             local Fill = Instance.new("Frame")
             Fill.Parent = BarBg
             Fill.BackgroundColor3 = Color3.fromRGB(0, 76, 255)
@@ -406,7 +376,6 @@ function SoroniceLib:CreateWindow(Config)
             Fill.Size = UDim2.new(0, 0, 1, 0)
             Instance.new("UICorner", Fill).CornerRadius = UDim.new(0, 20)
 
-            -- Le Bouton du slider (Cercle qui bouge)
             local SliderBtn = Instance.new("TextButton")
             SliderBtn.Parent = BarBg
             SliderBtn.BackgroundColor3 = Color3.fromRGB(0, 54, 203)
@@ -416,7 +385,6 @@ function SoroniceLib:CreateWindow(Config)
             SliderBtn.Text = ""
             Instance.new("UICorner", SliderBtn).CornerRadius = UDim.new(0, 100)
             
-            -- Pourcentage texte
             local ValueLabel = Instance.new("TextLabel")
             ValueLabel.Parent = BarBg
             ValueLabel.BackgroundTransparency = 1
@@ -430,12 +398,10 @@ function SoroniceLib:CreateWindow(Config)
 
             local function UpdateSliderInput(input)
                 local pos = UDim2.new(math.clamp((input.Position.X - BarBg.AbsolutePosition.X) / BarBg.AbsoluteSize.X, 0, 1), 0, 0.5, 0)
-                -- Positionnement du bouton
                 local scale = pos.X.Scale
-                SliderBtn.Position = UDim2.new(scale, -10, 0, 0) -- -10 pour centrer
+                SliderBtn.Position = UDim2.new(scale, -10, 0, 0)
                 Fill.Size = UDim2.new(scale, 0, 1, 0)
                 
-                -- Calcul mathématique de la valeur
                 local preciseValue = Min + ((Max - Min) * scale)
                 local finalValue = math.floor(preciseValue)
                 
@@ -460,8 +426,6 @@ function SoroniceLib:CreateWindow(Config)
                     UpdateSliderInput(input)
                 end
             end)
-            
-            -- Set Initial Value logic could be added here
 		end
 
 		return TabFunctions
@@ -470,4 +434,5 @@ function SoroniceLib:CreateWindow(Config)
 	return Window
 end
 
-
+-- LA LIGNE MAGIQUE QUI TE MANQUAIT :
+return SoroniceLib
