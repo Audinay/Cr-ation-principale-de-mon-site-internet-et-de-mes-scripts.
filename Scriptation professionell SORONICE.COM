@@ -1,4 +1,4 @@
--- [[ SORONICE UI LIBRARY - VERSION FINALE AVEC TON ANTI-AFK ]] --
+-- [[ SORONICE UI LIBRARY - VERSION V3 CORRIGÉE (KEYBIND & VISIBILITÉ) ]] --
 
 local SoroniceLib = {}
 local UserInputService = game:GetService("UserInputService")
@@ -11,34 +11,28 @@ local VirtualUser = game:GetService("VirtualUser")
 -- --- [ CONFIGURATION GLOBALE ] ---
 local Settings = {
 	Keybind = Enum.KeyCode.P, -- Touche par défaut
-	ThemeColor = Color3.fromRGB(20, 20, 20), -- Couleur de fond par défaut
-	AccentColor = Color3.fromRGB(0, 54, 203) -- Couleur des boutons par défaut
+	ThemeColor = Color3.fromRGB(20, 20, 20), -- Couleur de fond
+	AccentColor = Color3.fromRGB(0, 54, 203) -- Couleur des boutons
 }
 
--- --- [ SYSTÈME AFK (TON CODE INTÉGRÉ) ] ---
+-- --- [ SYSTÈME AFK (Ton code intégré) ] ---
 local antiAfkActive = false
-
--- Connexion permanente qui surveille l'état "Idle" (Inactif)
 LocalPlayer.Idled:Connect(function()
     if antiAfkActive then
-        -- Simule un clic pour empêcher la déconnexion sans faire sauter le joueur
         VirtualUser:CaptureController()
         VirtualUser:ClickButton2(Vector2.new())
     end
 end)
 
-
 -- --- [ DÉBUT DE LA LIBRARY ] ---
 
 function SoroniceLib:CreateWindow(Config)
-	-- 1. GESTION DU LOGIN
     if Config.KeySystem == true then
-        -- (Code login simplifié ici pour respecter la structure V3)
+        -- (Code Login ici si nécessaire, simplifié pour cette version)
     end
 
 	local TitleName = Config.Name or "SORONICE HUB"
 
-	-- Nettoyage
 	if CoreGui:FindFirstChild("Soronice_V6") then
 		CoreGui:FindFirstChild("Soronice_V6"):Destroy()
 	end
@@ -48,7 +42,7 @@ function SoroniceLib:CreateWindow(Config)
 	ScreenGui.Parent = CoreGui
     ScreenGui.ResetOnSpawn = false
 
-	-- LA FENÊTRE PRINCIPALE (Main)
+	-- MAIN FRAME
 	local MainFrame = Instance.new("Frame")
 	MainFrame.Name = "MainFrame"
 	MainFrame.Parent = ScreenGui
@@ -61,15 +55,14 @@ function SoroniceLib:CreateWindow(Config)
 	MainCorner.CornerRadius = UDim.new(0, 10)
 	MainCorner.Parent = MainFrame
 
-    -- [ZONE BLANCHE] : BARRE DE DÉPLACEMENT SUPÉRIEURE
+    -- [ZONE BLANCHE] : BARRE DE DÉPLACEMENT
 	local TopBar = Instance.new("Frame")
 	TopBar.Name = "TopBar"
 	TopBar.Parent = MainFrame
-	TopBar.BackgroundTransparency = 1 -- Invisible
+	TopBar.BackgroundTransparency = 1 
 	TopBar.Size = UDim2.new(1, 0, 0, 40)
     TopBar.Position = UDim2.new(0,0,0,0)
 
-    -- Système de déplacement (Draggable)
 	local dragging, dragInput, dragStart, startPos
 	TopBar.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -107,30 +100,32 @@ function SoroniceLib:CreateWindow(Config)
 	TitleLabel.TextSize = 22
 	TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-    -- [ZONE ROUGE] : BOUTON RÉDUIRE (-)
+    -- [ZONE ROUGE] : LE TRUC POUR RENDRE VISIBLE/INVISIBLE (Refait)
 	local MinBtn = Instance.new("TextButton")
 	MinBtn.Name = "Minimize"
 	MinBtn.Parent = TopBar
 	MinBtn.BackgroundTransparency = 1
-	MinBtn.Position = UDim2.new(1, -60, 0, 5) -- Juste à gauche du X
+	MinBtn.Position = UDim2.new(1, -60, 0, 5)
 	MinBtn.Size = UDim2.new(0, 30, 0, 30)
 	MinBtn.Font = Enum.Font.SourceSansBold
 	MinBtn.Text = "-"
 	MinBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 	MinBtn.TextSize = 24
     
-    -- Logique pour cacher/montrer
+    -- Logique de visibilité corrigée
 	local IsHidden = false
     local NotifShown = false 
 
     local function ToggleVisibility()
         IsHidden = not IsHidden
         MainFrame.Visible = not IsHidden
+        
+        -- Notification une seule fois
         if IsHidden and not NotifShown then
             NotifShown = true
             game.StarterGui:SetCore("SendNotification", {
                 Title = "Soronice Hub",
-                Text = "Appuie sur '" .. UserInputService:GetStringForKeyCode(Settings.Keybind) .. "' pour rouvrir le menu",
+                Text = "Appuie sur '" .. UserInputService:GetStringForKeyCode(Settings.Keybind) .. "' pour rouvrir.",
                 Duration = 5
             })
         end
@@ -138,13 +133,12 @@ function SoroniceLib:CreateWindow(Config)
 
 	MinBtn.MouseButton1Click:Connect(ToggleVisibility)
 
-    -- Gestion de la touche pour rouvrir
+    -- Gestion de la touche clavier (Le "P")
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if not gameProcessed and input.KeyCode == Settings.Keybind then
             ToggleVisibility()
         end
     end)
-
 
 	-- BOUTON FERMER (X)
 	local CloseBtn = Instance.new("TextButton")
@@ -162,7 +156,7 @@ function SoroniceLib:CreateWindow(Config)
 		ScreenGui:Destroy()
 	end)
 
-	-- SIDEBAR (Colonne de gauche)
+	-- SIDEBAR
 	local Sidebar = Instance.new("Frame")
 	Sidebar.Parent = MainFrame
 	Sidebar.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
@@ -181,25 +175,24 @@ function SoroniceLib:CreateWindow(Config)
 	SidebarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
     SidebarLayout.VerticalAlignment = Enum.VerticalAlignment.Top
 
-	-- ZONE DE CONTENU
+	-- CONTENU
 	local ContentContainer = Instance.new("Frame")
 	ContentContainer.Parent = MainFrame
 	ContentContainer.BackgroundTransparency = 1
 	ContentContainer.Position = UDim2.new(0, 80, 0, 50)
 	ContentContainer.Size = UDim2.new(0, 460, 0, 290)
 
-    -- [ZONE BLEUE] : BOUTON RÉGLAGES INTÉGRÉ
+    -- [ZONE BLEUE] : BOUTON RÉGLAGES
 	local SettingsBtn = Instance.new("TextButton")
 	SettingsBtn.Name = "Settings_Btn"
 	SettingsBtn.Parent = MainFrame 
 	SettingsBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 	SettingsBtn.BackgroundTransparency = 0.5
-    SettingsBtn.Position = UDim2.new(0, 18, 1, -55) -- Positionné en bas de la sidebar
+    SettingsBtn.Position = UDim2.new(0, 18, 1, -55)
 	SettingsBtn.Size = UDim2.new(0, 45, 0, 45)
 	SettingsBtn.Text = ""
     Instance.new("UICorner", SettingsBtn).CornerRadius = UDim.new(0, 8)
     
-    -- Icone Engrenage
 	local SettingsIcon = Instance.new("ImageLabel")
 	SettingsIcon.Parent = SettingsBtn
 	SettingsIcon.BackgroundTransparency = 1
@@ -207,7 +200,7 @@ function SoroniceLib:CreateWindow(Config)
 	SettingsIcon.Size = UDim2.new(0, 35, 0, 35)
 	SettingsIcon.Image = "rbxassetid://74182569229556"
 
-    -- Page Réglages
+    -- PAGE RÉGLAGES
     local SettingsPage = Instance.new("ScrollingFrame")
     SettingsPage.Name = "Settings_Page"
     SettingsPage.Parent = ContentContainer
@@ -220,7 +213,7 @@ function SoroniceLib:CreateWindow(Config)
     SettingsLayout.Parent = SettingsPage
     SettingsLayout.Padding = UDim.new(0, 8)
 
-    -- Logique d'ouverture des réglages
+    -- Ouverture réglages
     SettingsBtn.MouseButton1Click:Connect(function()
         for _, v in pairs(ContentContainer:GetChildren()) do
             v.Visible = false
@@ -237,7 +230,7 @@ function SoroniceLib:CreateWindow(Config)
 	local WindowFunctions = {}
 	local FirstTab = true
 
-    -- FONCTION CRÉATION D'ÉLÉMENTS
+    -- CREATION ELEMENTS
     local function CreateElement(Page, Type, Config)
         if Type == "Button" then
             local BtnFrame = Instance.new("Frame", Page)
@@ -269,17 +262,43 @@ function SoroniceLib:CreateWindow(Config)
             if Toggled then Update() end
             local Btn = Instance.new("TextButton", SwitchBg); Btn.BackgroundTransparency=1; Btn.Size=UDim2.new(1,0,1,0); Btn.Text=""
             Btn.MouseButton1Click:Connect(function() Toggled = not Toggled; Update() end)
+
+        -- [LE TRUC POUR CHANGER (KEYBIND) - CORRIGÉ]
+        elseif Type == "Keybind" then
+            local BindFrame = Instance.new("Frame", Page)
+            BindFrame.BackgroundColor3 = Color3.fromRGB(30,30,30); BindFrame.Size=UDim2.new(1,-10,0,35)
+            Instance.new("UICorner", BindFrame).CornerRadius = UDim.new(0,6)
+            local Label = Instance.new("TextLabel", BindFrame); Label.BackgroundTransparency=1; Label.Size=UDim2.new(0.7,0,1,0); Label.Position=UDim2.new(0,10,0,0); Label.Text=Config.Name; Label.TextColor3=Color3.new(1,1,1); Label.TextXAlignment=Enum.TextXAlignment.Left; Label.TextSize=16; Label.Font=Enum.Font.SourceSans
+            
+            local BindBtn = Instance.new("TextButton", BindFrame)
+            BindBtn.BackgroundColor3 = Color3.fromRGB(40,40,40); BindBtn.Position=UDim2.new(1,-80,0.5,-12); BindBtn.Size=UDim2.new(0,70,0,24)
+            BindBtn.Text = UserInputService:GetStringForKeyCode(Settings.Keybind)
+            BindBtn.Font = Enum.Font.SourceSansBold; BindBtn.TextColor3 = Color3.new(1,1,1); BindBtn.TextSize = 14
+            Instance.new("UICorner", BindBtn).CornerRadius=UDim.new(0,6)
+
+            -- Nouvelle logique de changement de touche (Propre et sans bug)
+            BindBtn.MouseButton1Click:Connect(function()
+                BindBtn.Text = "..."
+                local InputConnection
+                InputConnection = UserInputService.InputBegan:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.Keyboard then
+                        Settings.Keybind = input.KeyCode
+                        BindBtn.Text = UserInputService:GetStringForKeyCode(input.KeyCode)
+                        InputConnection:Disconnect() -- On coupe l'écoute immédiatement
+                        game.StarterGui:SetCore("SendNotification", {Title = "Réglages", Text = "Nouvelle touche : " .. BindBtn.Text, Duration = 3})
+                    end
+                end)
+            end)
         end
     end
 
-    -- [AJOUT TON CODE AFK ICI]
+    -- REMPLISSAGE AUTOMATIQUE RÉGLAGES
     CreateElement(SettingsPage, "Toggle", {
-        Name = "💤 Anti-AFK (No Kick)",
+        Name = "💤 Mode AFK (Anti-Kick)",
         CurrentValue = false,
         Callback = function(Value)
             antiAfkActive = Value
             if Value then
-                -- Notification native (plus sûr)
                 game.StarterGui:SetCore("SendNotification", {Title = "Anti-AFK", Text = "Activé : Vous ne serez pas kické.", Duration = 3})
             end
         end
@@ -315,20 +334,14 @@ function SoroniceLib:CreateWindow(Config)
 
 		local TabFunctions = {}
         
-		function TabFunctions:CreateButton(Config)
-            CreateElement(Page, "Button", Config)
-		end
+		function TabFunctions:CreateButton(Config) CreateElement(Page, "Button", Config) end
+        function TabFunctions:CreateToggle(Config) CreateElement(Page, "Toggle", Config) end
         
-        function TabFunctions:CreateToggle(Config)
-            CreateElement(Page, "Toggle", Config)
-        end
-
-        -- [CORRECTION ERREUR CONSOLE]
+        -- Fonctions vides pour éviter les erreurs
         function TabFunctions:CreateColorPicker(Config) end 
         function TabFunctions:CreateSection(Name) end
         function TabFunctions:CreateLabel(Text) end
 
-        -- Fonction Slider
         function TabFunctions:CreateSlider(Config)
              local SliderFrame = Instance.new("Frame", Page); SliderFrame.BackgroundTransparency=1; SliderFrame.Size=UDim2.new(1,-10,0,50)
              local Label = Instance.new("TextLabel", SliderFrame); Label.BackgroundTransparency=1; Label.Position=UDim2.new(0,10,0,0); Label.Size=UDim2.new(1,0,0,20); Label.Text=Config.Name; Label.TextColor3=Color3.new(1,1,1); Label.TextXAlignment=Enum.TextXAlignment.Left; Label.Font=Enum.Font.SourceSans; Label.TextSize=16
