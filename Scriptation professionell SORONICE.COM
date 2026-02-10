@@ -1,4 +1,4 @@
--- [[ SORONICE UI LIBRARY - VERSION V3 ORIGINALE + 3 AJOUTS ]] --
+-- [[ SORONICE UI LIBRARY - VERSION FINALE AVEC TON ANTI-AFK ]] --
 
 local SoroniceLib = {}
 local UserInputService = game:GetService("UserInputService")
@@ -6,6 +6,7 @@ local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = game.Players.LocalPlayer
 local CoreGui = game:GetService("CoreGui")
+local VirtualUser = game:GetService("VirtualUser")
 
 -- --- [ CONFIGURATION GLOBALE ] ---
 local Settings = {
@@ -14,35 +15,25 @@ local Settings = {
 	AccentColor = Color3.fromRGB(0, 54, 203) -- Couleur des boutons par défaut
 }
 
--- --- [ SYSTÈME AFK ] ---
-local AfkEnabled = false
-local AfkConnection = nil
+-- --- [ SYSTÈME AFK (TON CODE INTÉGRÉ) ] ---
+local antiAfkActive = false
 
-local function ToggleAfk(state)
-	AfkEnabled = state
-	if AfkEnabled then
-		-- On fait sauter le personnage toutes les 5 secondes pour pas être kick
-		AfkConnection = RunService.Stepped:Connect(function()
-			if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-				if math.random(1, 300) == 1 then -- Fait sauter aléatoirement
-					LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-				end
-			end
-		end)
-		game.StarterGui:SetCore("SendNotification", {Title = "AFK Mode", Text = "Activé : Vous ne serez pas déconnecté.", Duration = 3})
-	else
-		if AfkConnection then AfkConnection:Disconnect() end
-		game.StarterGui:SetCore("SendNotification", {Title = "AFK Mode", Text = "Désactivé.", Duration = 3})
-	end
-end
+-- Connexion permanente qui surveille l'état "Idle" (Inactif)
+LocalPlayer.Idled:Connect(function()
+    if antiAfkActive then
+        -- Simule un clic pour empêcher la déconnexion sans faire sauter le joueur
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton2(Vector2.new())
+    end
+end)
 
 
 -- --- [ DÉBUT DE LA LIBRARY ] ---
 
 function SoroniceLib:CreateWindow(Config)
-	-- 1. GESTION DU LOGIN (Comme avant)
+	-- 1. GESTION DU LOGIN
     if Config.KeySystem == true then
-        -- [CODE LOGIN ICI]
+        -- (Code login simplifié ici pour respecter la structure V3)
     end
 
 	local TitleName = Config.Name or "SORONICE HUB"
@@ -70,7 +61,7 @@ function SoroniceLib:CreateWindow(Config)
 	MainCorner.CornerRadius = UDim.new(0, 10)
 	MainCorner.Parent = MainFrame
 
-    -- [CORRECTION BLANC] : BARRE DE DÉPLACEMENT SUPÉRIEURE
+    -- [ZONE BLANCHE] : BARRE DE DÉPLACEMENT SUPÉRIEURE
 	local TopBar = Instance.new("Frame")
 	TopBar.Name = "TopBar"
 	TopBar.Parent = MainFrame
@@ -78,7 +69,7 @@ function SoroniceLib:CreateWindow(Config)
 	TopBar.Size = UDim2.new(1, 0, 0, 40)
     TopBar.Position = UDim2.new(0,0,0,0)
 
-    -- Système de déplacement (Draggable) appliqué SEULEMENT à la TopBar
+    -- Système de déplacement (Draggable)
 	local dragging, dragInput, dragStart, startPos
 	TopBar.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -116,7 +107,7 @@ function SoroniceLib:CreateWindow(Config)
 	TitleLabel.TextSize = 22
 	TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-    -- [AJOUT 1] : BOUTON RÉDUIRE (-) (Zone Rouge)
+    -- [ZONE ROUGE] : BOUTON RÉDUIRE (-)
 	local MinBtn = Instance.new("TextButton")
 	MinBtn.Name = "Minimize"
 	MinBtn.Parent = TopBar
@@ -128,8 +119,9 @@ function SoroniceLib:CreateWindow(Config)
 	MinBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 	MinBtn.TextSize = 24
     
+    -- Logique pour cacher/montrer
 	local IsHidden = false
-    local NotifShown = false -- Pour afficher la notif UNE SEULE fois
+    local NotifShown = false 
 
     local function ToggleVisibility()
         IsHidden = not IsHidden
@@ -152,6 +144,7 @@ function SoroniceLib:CreateWindow(Config)
             ToggleVisibility()
         end
     end)
+
 
 	-- BOUTON FERMER (X)
 	local CloseBtn = Instance.new("TextButton")
@@ -195,10 +188,10 @@ function SoroniceLib:CreateWindow(Config)
 	ContentContainer.Position = UDim2.new(0, 80, 0, 50)
 	ContentContainer.Size = UDim2.new(0, 460, 0, 290)
 
-    -- [AJOUT 2] : BOUTON RÉGLAGES INTÉGRÉ (Zone Bleue)
+    -- [ZONE BLEUE] : BOUTON RÉGLAGES INTÉGRÉ
 	local SettingsBtn = Instance.new("TextButton")
 	SettingsBtn.Name = "Settings_Btn"
-	SettingsBtn.Parent = MainFrame -- Parenté au MainFrame pour le placer librement
+	SettingsBtn.Parent = MainFrame 
 	SettingsBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 	SettingsBtn.BackgroundTransparency = 0.5
     SettingsBtn.Position = UDim2.new(0, 18, 1, -55) -- Positionné en bas de la sidebar
@@ -206,7 +199,7 @@ function SoroniceLib:CreateWindow(Config)
 	SettingsBtn.Text = ""
     Instance.new("UICorner", SettingsBtn).CornerRadius = UDim.new(0, 8)
     
-    -- Icone Engrenage (Ton ID)
+    -- Icone Engrenage
 	local SettingsIcon = Instance.new("ImageLabel")
 	SettingsIcon.Parent = SettingsBtn
 	SettingsIcon.BackgroundTransparency = 1
@@ -276,37 +269,19 @@ function SoroniceLib:CreateWindow(Config)
             if Toggled then Update() end
             local Btn = Instance.new("TextButton", SwitchBg); Btn.BackgroundTransparency=1; Btn.Size=UDim2.new(1,0,1,0); Btn.Text=""
             Btn.MouseButton1Click:Connect(function() Toggled = not Toggled; Update() end)
-
-        elseif Type == "Keybind" then
-            local BindFrame = Instance.new("Frame", Page)
-            BindFrame.BackgroundColor3 = Color3.fromRGB(30,30,30); BindFrame.Size=UDim2.new(1,-10,0,35)
-            Instance.new("UICorner", BindFrame).CornerRadius = UDim.new(0,6)
-            local Label = Instance.new("TextLabel", BindFrame); Label.BackgroundTransparency=1; Label.Size=UDim2.new(0.7,0,1,0); Label.Position=UDim2.new(0,10,0,0); Label.Text=Config.Name; Label.TextColor3=Color3.new(1,1,1); Label.TextXAlignment=Enum.TextXAlignment.Left; Label.TextSize=16; Label.Font=Enum.Font.SourceSans
-            local BindBtn = Instance.new("TextButton", BindFrame)
-            BindBtn.BackgroundColor3 = Color3.fromRGB(40,40,40); BindBtn.Position=UDim2.new(1,-80,0.5,-12); BindBtn.Size=UDim2.new(0,70,0,24)
-            BindBtn.Text = UserInputService:GetStringForKeyCode(Settings.Keybind)
-            BindBtn.Font = Enum.Font.SourceSansBold; BindBtn.TextColor3 = Color3.new(1,1,1); BindBtn.TextSize = 14
-            Instance.new("UICorner", BindBtn).CornerRadius=UDim.new(0,6)
-            local Listening = false
-            BindBtn.MouseButton1Click:Connect(function()
-                Listening = true; BindBtn.Text = "..."
-                UserInputService.InputBegan:Wait()
-            end)
-            UserInputService.InputBegan:Connect(function(input)
-                if Listening and input.UserInputType == Enum.UserInputType.Keyboard then
-                    Settings.Keybind = input.KeyCode; BindBtn.Text = UserInputService:GetStringForKeyCode(input.KeyCode); Listening = false
-                    game.StarterGui:SetCore("SendNotification", {Title = "Réglages", Text = "Nouvelle touche : " .. BindBtn.Text, Duration = 3})
-                end
-            end)
         end
     end
 
-    -- REMPLISSAGE PAGE RÉGLAGES
+    -- [AJOUT TON CODE AFK ICI]
     CreateElement(SettingsPage, "Toggle", {
-        Name = "Mode AFK (Anti-Kick)",
+        Name = "💤 Anti-AFK (No Kick)",
         CurrentValue = false,
         Callback = function(Value)
-            ToggleAfk(Value)
+            antiAfkActive = Value
+            if Value then
+                -- Notification native (plus sûr)
+                game.StarterGui:SetCore("SendNotification", {Title = "Anti-AFK", Text = "Activé : Vous ne serez pas kické.", Duration = 3})
+            end
         end
     })
     
@@ -348,12 +323,12 @@ function SoroniceLib:CreateWindow(Config)
             CreateElement(Page, "Toggle", Config)
         end
 
-        -- [AJOUT 3] : CORRECTION ERREUR CONSOLE (FONCTIONS MANQUANTES)
+        -- [CORRECTION ERREUR CONSOLE]
         function TabFunctions:CreateColorPicker(Config) end 
         function TabFunctions:CreateSection(Name) end
         function TabFunctions:CreateLabel(Text) end
 
-        -- Fonction Slider originale
+        -- Fonction Slider
         function TabFunctions:CreateSlider(Config)
              local SliderFrame = Instance.new("Frame", Page); SliderFrame.BackgroundTransparency=1; SliderFrame.Size=UDim2.new(1,-10,0,50)
              local Label = Instance.new("TextLabel", SliderFrame); Label.BackgroundTransparency=1; Label.Position=UDim2.new(0,10,0,0); Label.Size=UDim2.new(1,0,0,20); Label.Text=Config.Name; Label.TextColor3=Color3.new(1,1,1); Label.TextXAlignment=Enum.TextXAlignment.Left; Label.Font=Enum.Font.SourceSans; Label.TextSize=16
