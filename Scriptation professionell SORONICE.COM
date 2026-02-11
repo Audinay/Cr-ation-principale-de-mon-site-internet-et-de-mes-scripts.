@@ -1,4 +1,4 @@
--- [[ SORONICE UI LIBRARY - V4.3 (CADENAS TESTÉ & SIDEBAR CORRIGÉE) ]] --
+-- [[ SORONICE UI LIBRARY - V4.3 (FINALE : CADENAS, SIDEBAR FIX, COLOR PICKER PRO) ]] --
 
 local SoroniceLib = {}
 local UserInputService = game:GetService("UserInputService")
@@ -164,11 +164,12 @@ function SoroniceLib:CreateWindow(Config)
             LockOverlay.BackgroundTransparency = 1
             LockOverlay.Size = UDim2.new(1, 0, 1, 0)
             LockOverlay.Position = UDim2.new(0, 0, 0, 0)
-            LockOverlay.ZIndex = 20 -- ZIndex haut pour être sûr d'être au dessus
+            LockOverlay.ZIndex = 20 
             
-            -- [IMAGE TEST] : J'utilise un ID sûr. Remets le tien (139868914964686) si celui-ci s'affiche bien.
+            -- [ID CADENAS] : J'utilise un ID standard pour être sûr que tu le voies.
+            -- Si tu veux ton ID perso, remplace "3926305904" par "139868914964686"
             LockOverlay.Image = "rbxassetid://3926305904" 
-            LockOverlay.ImageTransparency = 0.2 -- Visible pour le test
+            LockOverlay.ImageTransparency = 0.2 -- Visible pour test
             LockOverlay.ImageColor3 = Color3.new(1, 0, 0) -- Rouge pour bien le voir
             
             LockOverlay.MouseButton1Click:Connect(function()
@@ -353,12 +354,13 @@ function SoroniceLib:CreateWindow(Config)
 	Sidebar.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 	Sidebar.BackgroundTransparency = 0.5
 	Sidebar.Position = UDim2.new(0, 10, 0, 50)
-	Sidebar.Size = UDim2.new(0, 60, 1, -60) -- [FIX] Taille relative pour ne pas dépasser
+	Sidebar.Size = UDim2.new(0, 60, 1, -60) -- [CORRECTION SIDEBAR]
     Sidebar.ClipsDescendants = true 
 	local SidebarCorner = Instance.new("UICorner")
 	SidebarCorner.CornerRadius = UDim.new(0, 8)
 	SidebarCorner.Parent = Sidebar
     
+    -- [SIDEBAR SCROLLING]
     local SidebarScroll = Instance.new("ScrollingFrame")
     SidebarScroll.Parent = Sidebar
     SidebarScroll.BackgroundTransparency = 1
@@ -618,7 +620,7 @@ function SoroniceLib:CreateWindow(Config)
         -- [SCROLLING DES PAGES]
 		local Page = Instance.new("ScrollingFrame", ContentContainer)
 		Page.BackgroundTransparency=1; Page.Size=UDim2.new(1,0,1,0); Page.ScrollBarThickness=6; Page.Visible=FirstTab
-        Page.AutomaticCanvasSize = Enum.AutomaticSize.Y 
+        Page.AutomaticCanvasSize = Enum.AutomaticSize.Y -- C'est ça qui fait que ça s'agrandit tout seul
         Page.CanvasSize = UDim2.new(0,0,0,0)
         Page.VerticalScrollBarInset = Enum.ScrollBarInset.None
 
