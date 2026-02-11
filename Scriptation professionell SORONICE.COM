@@ -1,4 +1,4 @@
--- [[ SORONICE UI LIBRARY - VERSION V4 CORRIGÉE AVEC LOGIN ACTIF (VERSION FINALE) ]] --
+-- [[ SORONICE UI LIBRARY - VERSION V3 CORRIGÉE AVEC LOGIN ACTIF (VERSION FINALE) ]] --
 
 local SoroniceLib = {}
 local UserInputService = game:GetService("UserInputService")
@@ -25,136 +25,142 @@ LocalPlayer.Idled:Connect(function()
     end
 end)
 
--- --- [ DÉBUT DE LA LIBRARY ] ---
+-- --- [ FONCTION INTERNE : SYSTÈME DE LOGIN (REMIS EN PLACE) ] ---
+local function SpawnLoginSystem(SettingsLogin)
+    local Validated = false
+    local RealPassword = SettingsLogin.Key or "1234"
+    
+    -- Si la clé est un lien, on va chercher le texte sur le site
+    if SettingsLogin.GrabKeyFromSite == true then
+        pcall(function()
+            local content = game:HttpGet(SettingsLogin.Key)
+            RealPassword = string.gsub(content, "%s+", "") -- Nettoyage du texte
+        end)
+    end
 
-function SoroniceLib:CreateWindow(Config)
-    -- 1. GESTION DU LOGIN (CODE COMPLET RESTAURÉ ICI)
-    if Config.KeySystem == true then
-        local Validated = false
-        local RealPassword = Config.KeySettings.Key or "1234"
-        
-        -- Si la clé est un lien, on va chercher le texte sur le site
-        if Config.KeySettings.GrabKeyFromSite == true then
-            pcall(function()
-                local content = game:HttpGet(Config.KeySettings.Key)
-                RealPassword = string.gsub(content, "%s+", "") -- Nettoyage du texte
-            end)
-        end
+    -- Création du GUI Login
+    local LoginGui = Instance.new("ScreenGui")
+    LoginGui.Name = "SoroniceLoginSystem"
+    LoginGui.Parent = CoreGui
+    LoginGui.ResetOnSpawn = false
+    
+    local BlurEffect = Instance.new("BlurEffect")
+    BlurEffect.Parent = game.Lighting
+    BlurEffect.Size = 24
+    
+    -- Image de fond (Le cadre vert/noir)
+    local BackgroundImage = Instance.new("ImageLabel")
+    BackgroundImage.Parent = LoginGui
+    BackgroundImage.AnchorPoint = Vector2.new(0.5, 0.5)
+    BackgroundImage.Position = UDim2.new(0.5, 0, 0.5, 0)
+    BackgroundImage.Size = UDim2.new(0, 500, 0, 350)
+    BackgroundImage.Image = "rbxassetid://114617892791025"
+    BackgroundImage.BackgroundTransparency = 1
+    
+    -- Titre
+    local TitleText = Instance.new("TextLabel")
+    TitleText.Parent = BackgroundImage
+    TitleText.BackgroundTransparency = 1
+    TitleText.Position = UDim2.new(0.1, 0, 0.04, 0)
+    TitleText.Size = UDim2.new(0.5, 0, 0.15, 0)
+    TitleText.Font = Enum.Font.FredokaOne
+    TitleText.Text = SettingsLogin.Title or "ACCÈS PREMIUM"
+    TitleText.TextColor3 = Color3.new(1,1,1)
+    TitleText.TextScaled = true
+    TitleText.TextXAlignment = Enum.TextXAlignment.Left
+    
+    -- Bouton Fermer
+    local CloseButton = Instance.new("TextButton")
+    CloseButton.Parent = BackgroundImage
+    CloseButton.BackgroundTransparency = 1
+    CloseButton.Position = UDim2.new(0.92, 0, 0.14, 0)
+    CloseButton.Size = UDim2.new(0.06, 0, 0.08, 0)
+    CloseButton.Text = ""
+    CloseButton.MouseButton1Click:Connect(function() 
+        LoginGui:Destroy()
+        BlurEffect:Destroy()
+        script:Destroy() 
+    end)
+    
+    -- Champ Mot de Passe
+    local InputBg = Instance.new("ImageLabel")
+    InputBg.Parent = BackgroundImage
+    InputBg.BackgroundTransparency = 1
+    InputBg.Position = UDim2.new(0.18, 0, 0.42, 0)
+    InputBg.Size = UDim2.new(0.62, 0, 0.15, 0)
+    InputBg.Image = "rbxassetid://75238927890132"
 
-        -- Création du GUI Login
-        local LoginGui = Instance.new("ScreenGui")
-        LoginGui.Name = "SoroniceLoginSystem"
-        LoginGui.Parent = CoreGui
-        LoginGui.ResetOnSpawn = false
-        
-        local BlurEffect = Instance.new("BlurEffect")
-        BlurEffect.Parent = game.Lighting
-        BlurEffect.Size = 24
-        
-        -- Image de fond (Le cadre vert/noir)
-        local BackgroundImage = Instance.new("ImageLabel")
-        BackgroundImage.Parent = LoginGui
-        BackgroundImage.AnchorPoint = Vector2.new(0.5, 0.5)
-        BackgroundImage.Position = UDim2.new(0.5, 0, 0.5, 0)
-        BackgroundImage.Size = UDim2.new(0, 500, 0, 350)
-        BackgroundImage.Image = "rbxassetid://114617892791025"
-        BackgroundImage.BackgroundTransparency = 1
-        
-        -- Titre
-        local TitleText = Instance.new("TextLabel")
-        TitleText.Parent = BackgroundImage
-        TitleText.BackgroundTransparency = 1
-        TitleText.Position = UDim2.new(0.1, 0, 0.04, 0)
-        TitleText.Size = UDim2.new(0.5, 0, 0.15, 0)
-        TitleText.Font = Enum.Font.FredokaOne
-        TitleText.Text = Config.KeySettings.Title or "ACCÈS PREMIUM"
-        TitleText.TextColor3 = Color3.new(1,1,1)
-        TitleText.TextScaled = true
-        TitleText.TextXAlignment = Enum.TextXAlignment.Left
-        
-        -- Bouton Fermer
-        local CloseButton = Instance.new("TextButton")
-        CloseButton.Parent = BackgroundImage
-        CloseButton.BackgroundTransparency = 1
-        CloseButton.Position = UDim2.new(0.92, 0, 0.14, 0)
-        CloseButton.Size = UDim2.new(0.06, 0, 0.08, 0)
-        CloseButton.Text = ""
-        CloseButton.MouseButton1Click:Connect(function() 
+    local PasswordBox = Instance.new("TextBox")
+    PasswordBox.Parent = InputBg
+    PasswordBox.BackgroundTransparency = 1
+    PasswordBox.Position = UDim2.new(0.15, 0, 0, 0)
+    PasswordBox.Size = UDim2.new(0.8, 0, 1, 0)
+    PasswordBox.Font = Enum.Font.SourceSansBold
+    PasswordBox.Text = ""
+    PasswordBox.PlaceholderText = "Entrez la clé ici..."
+    PasswordBox.TextColor3 = Color3.new(1,1,1)
+    PasswordBox.TextSize = 18
+    PasswordBox.TextXAlignment = Enum.TextXAlignment.Left
+    
+    -- Bouton Valider
+    local ValidateBtn = Instance.new("TextButton")
+    ValidateBtn.Parent = BackgroundImage
+    ValidateBtn.BackgroundColor3 = Color3.fromRGB(167, 167, 167)
+    ValidateBtn.Position = UDim2.new(0.5, 0, 0.68, 0)
+    ValidateBtn.AnchorPoint = Vector2.new(0.5, 0)
+    ValidateBtn.Size = UDim2.new(0.4, 0, 0.12, 0)
+    ValidateBtn.Text = "VALIDER"
+    ValidateBtn.Font = Enum.Font.SourceSansBold
+    ValidateBtn.TextSize = 18
+    Instance.new("UICorner", ValidateBtn).CornerRadius = UDim.new(0, 10)
+    
+    -- Bouton Lien
+    local LinkBtn = Instance.new("TextButton")
+    LinkBtn.Parent = BackgroundImage
+    LinkBtn.BackgroundColor3 = Color3.fromRGB(167, 167, 167)
+    LinkBtn.Position = UDim2.new(0.5, 0, 0.85, 0)
+    LinkBtn.AnchorPoint = Vector2.new(0.5, 0)
+    LinkBtn.Size = UDim2.new(0.4, 0, 0.12, 0)
+    LinkBtn.Text = SettingsLogin.LinkText or "Obtenir la clé"
+    LinkBtn.Font = Enum.Font.SourceSans
+    LinkBtn.TextSize = 14
+    Instance.new("UICorner", LinkBtn).CornerRadius = UDim.new(0, 10)
+    
+    local function Verify()
+        if PasswordBox.Text == RealPassword then 
+            Validated = true
             LoginGui:Destroy()
             BlurEffect:Destroy()
-            script:Destroy() 
-        end)
-        
-        -- Champ Mot de Passe
-        local InputBg = Instance.new("ImageLabel")
-        InputBg.Parent = BackgroundImage
-        InputBg.BackgroundTransparency = 1
-        InputBg.Position = UDim2.new(0.18, 0, 0.42, 0)
-        InputBg.Size = UDim2.new(0.62, 0, 0.15, 0)
-        InputBg.Image = "rbxassetid://75238927890132"
-
-        local PasswordBox = Instance.new("TextBox")
-        PasswordBox.Parent = InputBg
-        PasswordBox.BackgroundTransparency = 1
-        PasswordBox.Position = UDim2.new(0.15, 0, 0, 0)
-        PasswordBox.Size = UDim2.new(0.8, 0, 1, 0)
-        PasswordBox.Font = Enum.Font.SourceSansBold
-        PasswordBox.Text = ""
-        PasswordBox.PlaceholderText = "Entrez la clé ici..."
-        PasswordBox.TextColor3 = Color3.new(1,1,1)
-        PasswordBox.TextSize = 18
-        PasswordBox.TextXAlignment = Enum.TextXAlignment.Left
-        
-        -- Bouton Valider
-        local ValidateBtn = Instance.new("TextButton")
-        ValidateBtn.Parent = BackgroundImage
-        ValidateBtn.BackgroundColor3 = Color3.fromRGB(167, 167, 167)
-        ValidateBtn.Position = UDim2.new(0.5, 0, 0.68, 0)
-        ValidateBtn.AnchorPoint = Vector2.new(0.5, 0)
-        ValidateBtn.Size = UDim2.new(0.4, 0, 0.12, 0)
-        ValidateBtn.Text = "VALIDER"
-        ValidateBtn.Font = Enum.Font.SourceSansBold
-        ValidateBtn.TextSize = 18
-        Instance.new("UICorner", ValidateBtn).CornerRadius = UDim.new(0, 10)
-        
-        -- Bouton Lien
-        local LinkBtn = Instance.new("TextButton")
-        LinkBtn.Parent = BackgroundImage
-        LinkBtn.BackgroundColor3 = Color3.fromRGB(167, 167, 167)
-        LinkBtn.Position = UDim2.new(0.5, 0, 0.85, 0)
-        LinkBtn.AnchorPoint = Vector2.new(0.5, 0)
-        LinkBtn.Size = UDim2.new(0.4, 0, 0.12, 0)
-        LinkBtn.Text = Config.KeySettings.LinkText or "Obtenir la clé"
-        LinkBtn.Font = Enum.Font.SourceSans
-        LinkBtn.TextSize = 14
-        Instance.new("UICorner", LinkBtn).CornerRadius = UDim.new(0, 10)
-        
-        local function Verify()
-            if PasswordBox.Text == RealPassword then 
-                Validated = true
-                LoginGui:Destroy()
-                BlurEffect:Destroy()
-            else 
-                PasswordBox.Text = ""
-                PasswordBox.PlaceholderText = "Mot de passe INCORRECT !" 
-                wait(1.5) 
-                PasswordBox.PlaceholderText = "Entrez la clé ici..."
-            end
+        else 
+            PasswordBox.Text = ""
+            PasswordBox.PlaceholderText = "Mot de passe INCORRECT !" 
+            wait(1.5) 
+            PasswordBox.PlaceholderText = "Entrez la clé ici..."
         end
-        
-        ValidateBtn.MouseButton1Click:Connect(Verify)
-        LinkBtn.MouseButton1Click:Connect(function()
-            if Config.KeySettings.Link then 
-                setclipboard(Config.KeySettings.Link)
-                LinkBtn.Text = "Lien copié !"
-                wait(2)
-                LinkBtn.Text = Config.KeySettings.LinkText or "Obtenir la clé"
-            end
-        end)
-        
-        -- On bloque tout tant que le mot de passe n'est pas bon
-        repeat wait() until Validated or not LoginGui.Parent
-        if not Validated then script:Destroy() while true do wait(999) end end
+    end
+    
+    ValidateBtn.MouseButton1Click:Connect(Verify)
+    LinkBtn.MouseButton1Click:Connect(function()
+        if SettingsLogin.Link then 
+            setclipboard(SettingsLogin.Link)
+            LinkBtn.Text = "Lien copié !"
+            wait(2)
+            LinkBtn.Text = SettingsLogin.LinkText or "Obtenir la clé"
+        end
+    end)
+    
+    -- On bloque tout tant que le mot de passe n'est pas bon
+    repeat wait() until Validated or not LoginGui.Parent
+    if not Validated then script:Destroy() while true do wait(999) end end
+end
+
+
+-- --- [ DÉBUT DE LA CRÉATION DE LA FENÊTRE ] ---
+
+function SoroniceLib:CreateWindow(Config)
+    -- Lancement du Login si activé (C'est ça qui manquait !)
+    if Config.KeySystem == true then
+        SpawnLoginSystem(Config.KeySettings or {})
     end
 
 	local TitleName = Config.Name or "SORONICE HUB"
@@ -226,7 +232,7 @@ function SoroniceLib:CreateWindow(Config)
 	TitleLabel.TextSize = 22
 	TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-    -- [ZONE ROUGE] : LE TRUC POUR RENDRE VISIBLE/INVISIBLE (Refait)
+    -- [ZONE ROUGE] : LE BOUTON MOINS (-)
 	local MinBtn = Instance.new("TextButton")
 	MinBtn.Name = "Minimize"
 	MinBtn.Parent = TopBar
@@ -238,15 +244,12 @@ function SoroniceLib:CreateWindow(Config)
 	MinBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 	MinBtn.TextSize = 24
     
-    -- Logique de visibilité corrigée
 	local IsHidden = false
     local NotifShown = false 
 
     local function ToggleVisibility()
         IsHidden = not IsHidden
         MainFrame.Visible = not IsHidden
-        
-        -- Notification une seule fois
         if IsHidden and not NotifShown then
             NotifShown = true
             game.StarterGui:SetCore("SendNotification", {
@@ -389,7 +392,6 @@ function SoroniceLib:CreateWindow(Config)
             local Btn = Instance.new("TextButton", SwitchBg); Btn.BackgroundTransparency=1; Btn.Size=UDim2.new(1,0,1,0); Btn.Text=""
             Btn.MouseButton1Click:Connect(function() Toggled = not Toggled; Update() end)
 
-        -- [LE TRUC POUR CHANGER (KEYBIND) - CORRIGÉ]
         elseif Type == "Keybind" then
             local BindFrame = Instance.new("Frame", Page)
             BindFrame.BackgroundColor3 = Color3.fromRGB(30,30,30); BindFrame.Size=UDim2.new(1,-10,0,35)
@@ -402,7 +404,6 @@ function SoroniceLib:CreateWindow(Config)
             BindBtn.Font = Enum.Font.SourceSansBold; BindBtn.TextColor3 = Color3.new(1,1,1); BindBtn.TextSize = 14
             Instance.new("UICorner", BindBtn).CornerRadius=UDim.new(0,6)
 
-            -- Nouvelle logique de changement de touche (Propre et sans bug)
             BindBtn.MouseButton1Click:Connect(function()
                 BindBtn.Text = "..."
                 local InputConnection
