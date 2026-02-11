@@ -1,4 +1,4 @@
--- [[ SORONICE UI LIBRARY - V3.6 (SCROLLING FIXÉ + LIMITES BLANCHES RESPECTÉES) ]] --
+-- [[ SORONICE UI LIBRARY - V3.7 (CORRECTIF SLIDER MOBILE) ]] --
 
 local SoroniceLib = {}
 local UserInputService = game:GetService("UserInputService")
@@ -142,7 +142,7 @@ function SoroniceLib:CreateWindow(Config)
         MobileOpenBtn.BackgroundTransparency = 0.2
         MobileOpenBtn.Position = UDim2.new(0.1, 0, 0.1, 0) 
         MobileOpenBtn.Size = UDim2.new(0, 50, 0, 50)
-        MobileOpenBtn.Image = Config.MobileImage or "rbxassetid://133601263847208" -- Ton image maison
+        MobileOpenBtn.Image = Config.MobileImage or "rbxassetid://133601263847208"
         MobileOpenBtn.Visible = false 
         Instance.new("UICorner", MobileOpenBtn).CornerRadius = UDim.new(0, 12)
         
@@ -300,17 +300,16 @@ function SoroniceLib:CreateWindow(Config)
 	Sidebar.BackgroundTransparency = 0.5
 	Sidebar.Position = UDim2.new(0, 10, 0, 50)
 	Sidebar.Size = UDim2.new(0, 60, 0, MainFrame.Size.Y.Offset - 60)
-    Sidebar.ClipsDescendants = true -- Coupe ce qui dépasse
+    Sidebar.ClipsDescendants = true 
 	local SidebarCorner = Instance.new("UICorner")
 	SidebarCorner.CornerRadius = UDim.new(0, 8)
 	SidebarCorner.Parent = Sidebar
     
-    -- [SIDEBAR SCROLLING] : Pour éviter que les onglets dépassent en bas
     local SidebarScroll = Instance.new("ScrollingFrame")
     SidebarScroll.Parent = Sidebar
     SidebarScroll.BackgroundTransparency = 1
     SidebarScroll.Size = UDim2.new(1, 0, 1, 0)
-    SidebarScroll.ScrollBarThickness = 0 -- Invisible mais scrollable
+    SidebarScroll.ScrollBarThickness = 0
     SidebarScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
     
 	local SidebarLayout = Instance.new("UIListLayout")
@@ -329,7 +328,7 @@ function SoroniceLib:CreateWindow(Config)
     else
 	    ContentContainer.Size = UDim2.new(0, 460, 0, 290)
     end
-    ContentContainer.ClipsDescendants = true -- Coupe ce qui dépasse (Limite blanche)
+    ContentContainer.ClipsDescendants = true 
 
     -- [BOUTON RÉGLAGES]
 	local SettingsBtn = Instance.new("TextButton")
@@ -340,7 +339,7 @@ function SoroniceLib:CreateWindow(Config)
     SettingsBtn.Position = UDim2.new(0, 18, 1, -55)
 	SettingsBtn.Size = UDim2.new(0, 45, 0, 45)
 	SettingsBtn.Text = ""
-    SettingsBtn.ZIndex = 2 -- Au dessus de la sidebar
+    SettingsBtn.ZIndex = 2 
     Instance.new("UICorner", SettingsBtn).CornerRadius = UDim.new(0, 8)
 	local SettingsIcon = Instance.new("ImageLabel")
 	SettingsIcon.Parent = SettingsBtn
@@ -368,7 +367,6 @@ function SoroniceLib:CreateWindow(Config)
     SettingsBtn.MouseButton1Click:Connect(function()
         for _, v in pairs(ContentContainer:GetChildren()) do v.Visible = false end
         SettingsPage.Visible = true
-        -- Reset couleurs boutons
         for _, btn in pairs(SidebarScroll:GetChildren()) do
             if btn:IsA("TextButton") then TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0,0,0)}):Play() end
         end
@@ -460,7 +458,6 @@ function SoroniceLib:CreateWindow(Config)
 			TabBtn.Text = string.sub(TabName, 1, 1); TabBtn.TextColor3 = Color3.new(0.8,0.8,0.8); TabBtn.TextSize=20; TabBtn.Font=Enum.Font.SourceSansBold
 		end
 
-        -- [PAGE SCROLLING]
 		local Page = Instance.new("ScrollingFrame", ContentContainer)
 		Page.BackgroundTransparency=1; Page.Size=UDim2.new(1,0,1,0); Page.ScrollBarThickness=6; Page.Visible=FirstTab
         Page.AutomaticCanvasSize = Enum.AutomaticSize.Y
@@ -484,6 +481,8 @@ function SoroniceLib:CreateWindow(Config)
         function TabFunctions:CreateColorPicker(Config) end 
         function TabFunctions:CreateSection(Name) end
         function TabFunctions:CreateLabel(Text) end
+        
+        -- [SLIDER CORRIGÉ POUR MOBILE]
         function TabFunctions:CreateSlider(Config)
              local SliderFrame = Instance.new("Frame", Page); SliderFrame.BackgroundTransparency=1; SliderFrame.Size=UDim2.new(1,-10,0,50)
              local Label = Instance.new("TextLabel", SliderFrame); Label.BackgroundTransparency=1; Label.Position=UDim2.new(0,10,0,0); Label.Size=UDim2.new(1,0,0,20); Label.Text=Config.Name; Label.TextColor3=Color3.new(1,1,1); Label.TextXAlignment=Enum.TextXAlignment.Left; Label.Font=Enum.Font.SourceSans; Label.TextSize=16
@@ -494,10 +493,20 @@ function SoroniceLib:CreateWindow(Config)
              local Default = Config.CurrentValue or Min; ValLabel.Text = tostring(Default).."%"
              Knob.Position = UDim2.new((Default-Min)/(Max-Min), 0, 0.5, 0)
              local dragging = false
-             Knob.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging=true end end)
-             UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging=false end end)
+             
+             -- [CORRECTION MOBILE ICI] : On ajoute 'Touch'
+             Knob.InputBegan:Connect(function(input) 
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
+                    dragging = true 
+                end 
+             end)
+             UserInputService.InputEnded:Connect(function(input) 
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
+                    dragging = false 
+                end 
+             end)
              UserInputService.InputChanged:Connect(function(input)
-                if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
                     local Percent = math.clamp((input.Position.X - Bar.AbsolutePosition.X)/Bar.AbsoluteSize.X, 0, 1)
                     Knob.Position = UDim2.new(Percent, 0, 0.5, 0)
                     local Val = math.floor(Min + (Max-Min)*Percent)
