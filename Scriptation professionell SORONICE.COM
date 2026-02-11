@@ -1,4 +1,4 @@
--- [[ SORONICE UI LIBRARY - V3.8 (COLOR PICKER FONCTIONNEL) ]] --
+-- [[ SORONICE UI LIBRARY - V3.9 (SCROLLING FIXÉ + COLOR PICKER + SIDEBAR CLEAN) ]] --
 
 local SoroniceLib = {}
 local UserInputService = game:GetService("UserInputService")
@@ -179,7 +179,6 @@ function SoroniceLib:CreateWindow(Config)
 	MainFrame.BackgroundColor3 = Settings.ThemeColor
 	MainFrame.BackgroundTransparency = 0.2
     
-    -- [TAILLE ADAPTATIVE]
     if IsMobile then
         MainFrame.Position = UDim2.new(0.5, -200, 0.5, -130)
 	    MainFrame.Size = UDim2.new(0, 400, 0, 260)
@@ -304,10 +303,12 @@ function SoroniceLib:CreateWindow(Config)
 	SidebarCorner.CornerRadius = UDim.new(0, 8)
 	SidebarCorner.Parent = Sidebar
     
+    -- [SIDEBAR SCROLLING SÉPARÉ] : On laisse de la place en bas pour le bouton réglages
     local SidebarScroll = Instance.new("ScrollingFrame")
     SidebarScroll.Parent = Sidebar
     SidebarScroll.BackgroundTransparency = 1
-    SidebarScroll.Size = UDim2.new(1, 0, 1, 0)
+    SidebarScroll.Position = UDim2.new(0, 0, 0, 0)
+    SidebarScroll.Size = UDim2.new(1, 0, 1, -50) -- On laisse 50px pour le bouton réglages
     SidebarScroll.ScrollBarThickness = 0
     SidebarScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
     
@@ -329,13 +330,14 @@ function SoroniceLib:CreateWindow(Config)
     end
     ContentContainer.ClipsDescendants = true 
 
-    -- [BOUTON RÉGLAGES]
+    -- [BOUTON RÉGLAGES] (Placé DANS la sidebar mais hors du scroll)
 	local SettingsBtn = Instance.new("TextButton")
 	SettingsBtn.Name = "Settings_Btn"
-	SettingsBtn.Parent = MainFrame 
+	SettingsBtn.Parent = Sidebar -- Parenté à la Sidebar maintenant
 	SettingsBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 	SettingsBtn.BackgroundTransparency = 0.5
-    SettingsBtn.Position = UDim2.new(0, 18, 1, -55)
+    SettingsBtn.Position = UDim2.new(0.5, -22, 1, -50) -- Centré en bas de la sidebar
+    SettingsBtn.AnchorPoint = Vector2.new(0, 0) -- Reset anchor pour éviter les décalages
 	SettingsBtn.Size = UDim2.new(0, 45, 0, 45)
 	SettingsBtn.Text = ""
     SettingsBtn.ZIndex = 2 
@@ -385,7 +387,7 @@ function SoroniceLib:CreateWindow(Config)
 			Btn.MouseButton1Click:Connect(function() 
                 TweenService:Create(BtnFrame, TweenInfo.new(0.1), {BackgroundColor3=Color3.fromRGB(50,50,50)}):Play(); wait(0.1)
                 TweenService:Create(BtnFrame, TweenInfo.new(0.1), {BackgroundColor3=Color3.fromRGB(30,30,30)}):Play()
-                Config.Callback() 
+                if Config.Callback then Config.Callback() end -- Ajout sécurité
             end)
         elseif Type == "Toggle" then
             local ToggleFrame = Instance.new("Frame", Page); ToggleFrame.BackgroundTransparency=1; ToggleFrame.Size=UDim2.new(1,-10,0,35)
@@ -400,7 +402,7 @@ function SoroniceLib:CreateWindow(Config)
                 local TargetCol = Toggled and Settings.AccentColor or Color3.fromRGB(40,40,40)
                 TweenService:Create(Knob, TweenInfo.new(0.2), {Position=TargetPos}):Play()
                 TweenService:Create(SwitchBg, TweenInfo.new(0.2), {BackgroundColor3=TargetCol}):Play()
-                Config.Callback(Toggled)
+                if Config.Callback then Config.Callback(Toggled) end
             end
             if Toggled then Update() end
             local Btn = Instance.new("TextButton", SwitchBg); Btn.BackgroundTransparency=1; Btn.Size=UDim2.new(1,0,1,0); Btn.Text=""
@@ -430,13 +432,13 @@ function SoroniceLib:CreateWindow(Config)
         elseif Type == "Label" then
             local LabelFrame = Instance.new("Frame", Page); LabelFrame.BackgroundTransparency=1; LabelFrame.Size=UDim2.new(1,-10,0,25)
             local Txt = Instance.new("TextLabel", LabelFrame); Txt.BackgroundTransparency=1; Txt.Size=UDim2.new(1,0,1,0); Txt.Position=UDim2.new(0,10,0,0)
-            Txt.Text = Config.Text; Txt.TextColor3 = Settings.ThemeColor == Color3.fromRGB(255,255,255) and Color3.new(0,0,0) or Color3.new(1,1,1); Txt.TextXAlignment=Enum.TextXAlignment.Left; Txt.Font=Enum.Font.SourceSans; Txt.TextSize=16
+            Txt.Text = Config.Text or "Label"; Txt.TextColor3 = Settings.ThemeColor == Color3.fromRGB(255,255,255) and Color3.new(0,0,0) or Color3.new(1,1,1); Txt.TextXAlignment=Enum.TextXAlignment.Left; Txt.Font=Enum.Font.SourceSans; Txt.TextSize=16
         elseif Type == "Section" then
             local SectionFrame = Instance.new("Frame", Page); SectionFrame.BackgroundTransparency=1; SectionFrame.Size=UDim2.new(1,-10,0,30)
             local Txt = Instance.new("TextLabel", SectionFrame); Txt.BackgroundTransparency=1; Txt.Size=UDim2.new(1,0,1,0); Txt.Position=UDim2.new(0,10,0,0)
-            Txt.Text = Config.Text; Txt.TextColor3 = Settings.AccentColor; Txt.TextXAlignment=Enum.TextXAlignment.Left; Txt.Font=Enum.Font.SourceSansBold; Txt.TextSize=18
+            Txt.Text = Config.Text or "Section"; Txt.TextColor3 = Settings.AccentColor; Txt.TextXAlignment=Enum.TextXAlignment.Left; Txt.Font=Enum.Font.SourceSansBold; Txt.TextSize=18
         
-        -- [AJOUT COLOR PICKER FONCTIONNEL]
+        -- [COLOR PICKER]
         elseif Type == "ColorPicker" then
             local CPFrame = Instance.new("Frame", Page)
             CPFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25); CPFrame.Size = UDim2.new(1, -10, 0, 130)
@@ -448,7 +450,7 @@ function SoroniceLib:CreateWindow(Config)
             
             local Title = Instance.new("TextLabel", CPFrame)
             Title.BackgroundTransparency = 1; Title.Position = UDim2.new(0, 50, 0, 10); Title.Size = UDim2.new(0, 200, 0, 30)
-            Title.Text = Config.Name; Title.TextColor3 = Color3.new(1,1,1); Title.TextXAlignment = Enum.TextXAlignment.Left; Title.Font = Enum.Font.SourceSansBold; Title.TextSize = 16
+            Title.Text = Config.Name or "Color Picker"; Title.TextColor3 = Color3.new(1,1,1); Title.TextXAlignment = Enum.TextXAlignment.Left; Title.Font = Enum.Font.SourceSansBold; Title.TextSize = 16
 
             local R, G, B = math.floor(Preview.BackgroundColor3.R*255), math.floor(Preview.BackgroundColor3.G*255), math.floor(Preview.BackgroundColor3.B*255)
             
@@ -509,7 +511,7 @@ function SoroniceLib:CreateWindow(Config)
 			TabBtn.Text = string.sub(TabName, 1, 1); TabBtn.TextColor3 = Color3.new(0.8,0.8,0.8); TabBtn.TextSize=20; TabBtn.Font=Enum.Font.SourceSansBold
 		end
 
-        -- [SCROLLING DES PAGES] : Activation du défilement ici
+        -- [SCROLLING DES PAGES]
 		local Page = Instance.new("ScrollingFrame", ContentContainer)
 		Page.BackgroundTransparency=1; Page.Size=UDim2.new(1,0,1,0); Page.ScrollBarThickness=6; Page.Visible=FirstTab
         Page.AutomaticCanvasSize = Enum.AutomaticSize.Y -- C'est ça qui fait que ça s'agrandit tout seul
@@ -563,7 +565,7 @@ function SoroniceLib:CreateWindow(Config)
                     Knob.Position = UDim2.new(Percent, 0, 0.5, 0)
                     local Val = math.floor(Min + (Max-Min)*Percent)
                     ValLabel.Text = tostring(Val).."%"
-                    Config.Callback(Val)
+                    if Config.Callback then Config.Callback(Val) end
                 end
              end)
         end
