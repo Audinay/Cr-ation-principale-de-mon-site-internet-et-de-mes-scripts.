@@ -1,4 +1,4 @@
--- [[ SORONICE UI LIBRARY - V3.7 (CORRECTIF SLIDER MOBILE) ]] --
+-- [[ SORONICE UI LIBRARY - V3.8 (COLOR PICKER FONCTIONNEL) ]] --
 
 local SoroniceLib = {}
 local UserInputService = game:GetService("UserInputService")
@@ -192,7 +192,6 @@ function SoroniceLib:CreateWindow(Config)
 	MainCorner.CornerRadius = UDim.new(0, 10)
 	MainCorner.Parent = MainFrame
 
-    -- Barre de déplacement
 	local TopBar = Instance.new("Frame")
 	TopBar.Name = "TopBar"
 	TopBar.Parent = MainFrame
@@ -428,6 +427,58 @@ function SoroniceLib:CreateWindow(Config)
                     end
                 end)
             end)
+        elseif Type == "Label" then
+            local LabelFrame = Instance.new("Frame", Page); LabelFrame.BackgroundTransparency=1; LabelFrame.Size=UDim2.new(1,-10,0,25)
+            local Txt = Instance.new("TextLabel", LabelFrame); Txt.BackgroundTransparency=1; Txt.Size=UDim2.new(1,0,1,0); Txt.Position=UDim2.new(0,10,0,0)
+            Txt.Text = Config.Text; Txt.TextColor3 = Settings.ThemeColor == Color3.fromRGB(255,255,255) and Color3.new(0,0,0) or Color3.new(1,1,1); Txt.TextXAlignment=Enum.TextXAlignment.Left; Txt.Font=Enum.Font.SourceSans; Txt.TextSize=16
+        elseif Type == "Section" then
+            local SectionFrame = Instance.new("Frame", Page); SectionFrame.BackgroundTransparency=1; SectionFrame.Size=UDim2.new(1,-10,0,30)
+            local Txt = Instance.new("TextLabel", SectionFrame); Txt.BackgroundTransparency=1; Txt.Size=UDim2.new(1,0,1,0); Txt.Position=UDim2.new(0,10,0,0)
+            Txt.Text = Config.Text; Txt.TextColor3 = Settings.AccentColor; Txt.TextXAlignment=Enum.TextXAlignment.Left; Txt.Font=Enum.Font.SourceSansBold; Txt.TextSize=18
+        
+        -- [AJOUT COLOR PICKER FONCTIONNEL]
+        elseif Type == "ColorPicker" then
+            local CPFrame = Instance.new("Frame", Page)
+            CPFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25); CPFrame.Size = UDim2.new(1, -10, 0, 130)
+            Instance.new("UICorner", CPFrame).CornerRadius = UDim.new(0, 6)
+            
+            local Preview = Instance.new("Frame", CPFrame)
+            Preview.Position = UDim2.new(0, 10, 0, 10); Preview.Size = UDim2.new(0, 30, 0, 30); Preview.BackgroundColor3 = Config.Color or Color3.new(1,1,1)
+            Instance.new("UICorner", Preview).CornerRadius = UDim.new(0, 4)
+            
+            local Title = Instance.new("TextLabel", CPFrame)
+            Title.BackgroundTransparency = 1; Title.Position = UDim2.new(0, 50, 0, 10); Title.Size = UDim2.new(0, 200, 0, 30)
+            Title.Text = Config.Name; Title.TextColor3 = Color3.new(1,1,1); Title.TextXAlignment = Enum.TextXAlignment.Left; Title.Font = Enum.Font.SourceSansBold; Title.TextSize = 16
+
+            local R, G, B = math.floor(Preview.BackgroundColor3.R*255), math.floor(Preview.BackgroundColor3.G*255), math.floor(Preview.BackgroundColor3.B*255)
+            
+            local function CreateRGBBar(YPos, Col, Val, Callback)
+                local Bar = Instance.new("Frame", CPFrame); Bar.BackgroundColor3 = Color3.fromRGB(10,10,10); Bar.Position = UDim2.new(0, 10, 0, YPos); Bar.Size = UDim2.new(1, -20, 0, 10)
+                Instance.new("UICorner", Bar).CornerRadius = UDim.new(1, 0)
+                local Knob = Instance.new("TextButton", Bar); Knob.BackgroundColor3 = Col; Knob.Size = UDim2.new(0, 20, 0, 20); Knob.AnchorPoint = Vector2.new(0.5,0.5); Knob.Position = UDim2.new(Val/255, 0, 0.5, 0); Knob.Text = ""
+                Instance.new("UICorner", Knob).CornerRadius = UDim.new(1, 0)
+                
+                local dragging = false
+                Knob.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = true end end)
+                UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end end)
+                UserInputService.InputChanged:Connect(function(input)
+                    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                        local Percent = math.clamp((input.Position.X - Bar.AbsolutePosition.X)/Bar.AbsoluteSize.X, 0, 1)
+                        Knob.Position = UDim2.new(Percent, 0, 0.5, 0)
+                        Callback(math.floor(Percent * 255))
+                    end
+                end)
+            end
+            
+            local function UpdateColor()
+                local NewCol = Color3.fromRGB(R, G, B)
+                Preview.BackgroundColor3 = NewCol
+                if Config.Callback then Config.Callback(NewCol) end
+            end
+
+            CreateRGBBar(50, Color3.fromRGB(255,50,50), R, function(v) R = v; UpdateColor() end)
+            CreateRGBBar(80, Color3.fromRGB(50,255,50), G, function(v) G = v; UpdateColor() end)
+            CreateRGBBar(110, Color3.fromRGB(50,50,255), B, function(v) B = v; UpdateColor() end)
         end
     end
 
@@ -458,9 +509,10 @@ function SoroniceLib:CreateWindow(Config)
 			TabBtn.Text = string.sub(TabName, 1, 1); TabBtn.TextColor3 = Color3.new(0.8,0.8,0.8); TabBtn.TextSize=20; TabBtn.Font=Enum.Font.SourceSansBold
 		end
 
+        -- [SCROLLING DES PAGES] : Activation du défilement ici
 		local Page = Instance.new("ScrollingFrame", ContentContainer)
 		Page.BackgroundTransparency=1; Page.Size=UDim2.new(1,0,1,0); Page.ScrollBarThickness=6; Page.Visible=FirstTab
-        Page.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        Page.AutomaticCanvasSize = Enum.AutomaticSize.Y -- C'est ça qui fait que ça s'agrandit tout seul
         Page.CanvasSize = UDim2.new(0,0,0,0)
         Page.VerticalScrollBarInset = Enum.ScrollBarInset.None
 
@@ -478,9 +530,9 @@ function SoroniceLib:CreateWindow(Config)
 		local TabFunctions = {}
 		function TabFunctions:CreateButton(Config) CreateElement(Page, "Button", Config) end
         function TabFunctions:CreateToggle(Config) CreateElement(Page, "Toggle", Config) end
-        function TabFunctions:CreateColorPicker(Config) end 
-        function TabFunctions:CreateSection(Name) end
-        function TabFunctions:CreateLabel(Text) end
+        function TabFunctions:CreateColorPicker(Config) CreateElement(Page, "ColorPicker", Config) end 
+        function TabFunctions:CreateSection(Text) CreateElement(Page, "Section", {Text=Text}) end
+        function TabFunctions:CreateLabel(Text) CreateElement(Page, "Label", {Text=Text}) end
         
         -- [SLIDER CORRIGÉ POUR MOBILE]
         function TabFunctions:CreateSlider(Config)
