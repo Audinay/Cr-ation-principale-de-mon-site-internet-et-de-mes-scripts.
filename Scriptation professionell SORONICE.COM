@@ -1,11 +1,10 @@
--- [[ SORONICE UI LIBRARY - V5.1 (SAVE FIX, AUTO-STOP TOTAL, CENTER ANIMATION) ]] --
+-- [[ SORONICE UI LIBRARY - V5.2 (ARRÊT D'URGENCE TOTAL + RESET VITESSE) ]] --
 
 local SoroniceLib = {}
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local MarketplaceService = game:GetService("MarketplaceService") 
-local HttpService = game:GetService("HttpService")
 local LocalPlayer = game.Players.LocalPlayer
 local CoreGui = game:GetService("CoreGui")
 local VirtualUser = game:GetService("VirtualUser")
@@ -21,28 +20,8 @@ local Settings = {
 	AccentColor = Color3.fromRGB(0, 54, 203)
 }
 
--- --- [ GESTION SAUVEGARDE & RESET ] ---
-local ConfigName = "Soronice_Config.json"
-local LibrarySettings = {} -- Ce qui sera sauvegardé
-local ActiveElements = {}  -- Liste pour tout éteindre à la fermeture
-
-local function SaveSettings()
-    if writefile then
-        pcall(function()
-            writefile(ConfigName, HttpService:JSONEncode(LibrarySettings))
-        end)
-    end
-end
-
-local function LoadSettings()
-    if readfile and isfile and isfile(ConfigName) then
-        local Success, Result = pcall(function()
-            return HttpService:JSONDecode(readfile(ConfigName))
-        end)
-        if Success then return Result else return {} end
-    end
-    return {}
-end
+-- --- [ LISTE DES ÉLÉMENTS ACTIFS (POUR LES ARRÊTER) ] ---
+local ActiveElements = {} 
 
 -- --- [ SYSTÈME AFK ] ---
 local antiAfkActive = false
@@ -147,7 +126,6 @@ end
 -- --- [ CRÉATION DE LA FENÊTRE ] ---
 
 function SoroniceLib:CreateWindow(Config)
-    local SavedData = LoadSettings() -- Chargement initial
     if Config.KeySystem == true then SpawnLoginSystem(Config.KeySettings or {}) end
 
 	local TitleName = Config.Name or "SORONICE HUB"
@@ -216,7 +194,6 @@ function SoroniceLib:CreateWindow(Config)
         MobileOpenBtn.Image = Config.MobileImage or "rbxassetid://133601263847208"
         MobileOpenBtn.Visible = false 
         Instance.new("UICorner", MobileOpenBtn).CornerRadius = UDim.new(0, 12)
-        
         local dragging_mob, dragInput_mob, dragStart_mob, startPos_mob
         MobileOpenBtn.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -250,20 +227,18 @@ function SoroniceLib:CreateWindow(Config)
 	MainFrame.BackgroundColor3 = Settings.ThemeColor
 	MainFrame.BackgroundTransparency = 0.2
     
-    -- [ANIMATION CENTER] : AnchorPoint à 0.5, 0.5
+    -- [ANIMATION CENTER]
     MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
     
-    -- Position et Taille Cible
     local TargetSize
     if IsMobile then
-        MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0) -- Centre absolu
+        MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0) 
         TargetSize = UDim2.new(0, 400, 0, 260)
     else
-	    MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0) -- Centre absolu
+	    MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
         TargetSize = UDim2.new(0, 550, 0, 350)
     end
     
-    -- Animation Ouverture
     MainFrame.Size = UDim2.new(0, 0, 0, 0)
     MainFrame.ClipsDescendants = true 
     TweenService:Create(MainFrame, TweenInfo.new(0.7, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = TargetSize}):Play()
@@ -348,7 +323,7 @@ function SoroniceLib:CreateWindow(Config)
         if not IsMobile and not gameProcessed and input.KeyCode == Settings.Keybind then ToggleVisibility() end
     end)
 
-    -- [FERMETURE INTELLIGENTE : SAVE + STOP + ANIMATION]
+    -- [FERMETURE AVEC ARRÊT D'URGENCE (KILL SWITCH)]
 	local CloseBtn = Instance.new("TextButton")
 	CloseBtn.Name = "Close"
 	CloseBtn.Parent = TopBar
@@ -360,15 +335,20 @@ function SoroniceLib:CreateWindow(Config)
 	CloseBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 	CloseBtn.TextSize = 20
 	CloseBtn.MouseButton1Click:Connect(function() 
-        -- 1. SAUVEGARDER L'ÉTAT ACTUEL
-        SaveSettings()
         
-        -- 2. RESET TOTAL (Désactiver Toggles, Reset Sliders)
+        -- 1. RESET FORCÉ DU PERSONNAGE (Vitesse & Saut)
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.WalkSpeed = 16
+            LocalPlayer.Character.Humanoid.JumpPower = 50
+        end
+
+        -- 2. DÉSACTIVATION DE TOUS LES TOGGLES ET SLIDERS
         for _, Element in pairs(ActiveElements) do
             if Element.Type == "Toggle" and Element.Callback then
-                Element.Callback(false) -- Coupe le script
+                -- On appelle le callback avec FALSE pour dire "Arrête ton script !"
+                Element.Callback(false) 
             elseif Element.Type == "Slider" and Element.Callback then
-                -- On reset à la valeur min pour couper l'effet (ex: vitesse)
+                -- On remet le slider à sa valeur MINIMUM (ex: 16 pour la vitesse)
                 Element.Callback(Element.Min or 0) 
             end
         end
@@ -493,13 +473,9 @@ function SoroniceLib:CreateWindow(Config)
             
             local Locked = ApplyLock(ToggleFrame, Config)
 
-            -- [CHARGEMENT SAVE]
             local Toggled = Config.CurrentValue or false
-            if Config.Flag and SavedData[Config.Flag] ~= nil then
-                Toggled = SavedData[Config.Flag]
-            end
-
-            -- [ENREGISTREMENT POUR LE RESET]
+            
+            -- [ENREGISTREMENT POUR LE RESET FORCE]
             table.insert(ActiveElements, {Type = "Toggle", Callback = Config.Callback})
 
             local function Update()
@@ -508,8 +484,6 @@ function SoroniceLib:CreateWindow(Config)
                 TweenService:Create(Knob, TweenInfo.new(0.2), {Position=TargetPos}):Play()
                 TweenService:Create(SwitchBg, TweenInfo.new(0.2), {BackgroundColor3=TargetCol}):Play()
                 
-                -- SAVE LIVE
-                if Config.Flag then LibrarySettings[Config.Flag] = Toggled end
                 if Config.Callback then Config.Callback(Toggled) end
             end
             if Toggled then Update() end
@@ -695,18 +669,13 @@ function SoroniceLib:CreateWindow(Config)
              local Min, Max = Config.Range[1] or 0, Config.Range[2] or 100
              local Default = Config.CurrentValue or Min
              
-             -- [CHARGEMENT SAVE SLIDER]
-             if Config.Flag and SavedData[Config.Flag] ~= nil then
-                 Default = SavedData[Config.Flag]
-             end
-             
              -- [ENREGISTREMENT POUR RESET]
              table.insert(ActiveElements, {Type = "Slider", Callback = Config.Callback, Min = Min})
 
              ValLabel.Text = tostring(Default).."%"
              Knob.Position = UDim2.new((Default-Min)/(Max-Min), 0, 0.5, 0)
              
-             -- TRIGGER AU LANCEMENT SI SAUVEGARDÉ
+             -- TRIGGER AU LANCEMENT (SANS SAUVEGARDE)
              if Config.Callback and Default ~= Min then Config.Callback(Default) end
 
              if not Locked then
@@ -724,8 +693,6 @@ function SoroniceLib:CreateWindow(Config)
                         local Val = math.floor(Min + (Max-Min)*Percent)
                         ValLabel.Text = tostring(Val).."%"
                         
-                        -- SAVE LIVE
-                        if Config.Flag then LibrarySettings[Config.Flag] = Val end
                         if Config.Callback then Config.Callback(Val) end
                     end
                  end)
