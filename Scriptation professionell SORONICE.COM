@@ -1,4 +1,4 @@
--- [[ SORONICE UI LIBRARY - VERSION V3 CORRIGÉE AVEC LOGIN ACTIF (VERSION FINALE) ]] --
+-- [[ SORONICE UI LIBRARY - V3 FINALE (SCROLLING + MODE MOBILE) ]] --
 
 local SoroniceLib = {}
 local UserInputService = game:GetService("UserInputService")
@@ -7,16 +7,21 @@ local RunService = game:GetService("RunService")
 local LocalPlayer = game.Players.LocalPlayer
 local CoreGui = game:GetService("CoreGui")
 local VirtualUser = game:GetService("VirtualUser")
-local StarterGui = game:GetService("StarterGui") -- Ajouté pour les notifs
+local StarterGui = game:GetService("StarterGui")
+
+-- --- [ DÉTECTION MOBILE ] ---
+local IsMobile = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
+-- Pour tester sur PC, décommente la ligne suivante :
+-- IsMobile = true 
 
 -- --- [ CONFIGURATION GLOBALE ] ---
 local Settings = {
-	Keybind = Enum.KeyCode.P, -- Touche par défaut
+	Keybind = Enum.KeyCode.P, -- Touche par défaut (PC uniquement)
 	ThemeColor = Color3.fromRGB(20, 20, 20), -- Couleur de fond
 	AccentColor = Color3.fromRGB(0, 54, 203) -- Couleur des boutons
 }
 
--- --- [ SYSTÈME AFK (Ton code intégré) ] ---
+-- --- [ SYSTÈME AFK ] ---
 local antiAfkActive = false
 LocalPlayer.Idled:Connect(function()
     if antiAfkActive then
@@ -25,30 +30,23 @@ LocalPlayer.Idled:Connect(function()
     end
 end)
 
--- --- [ FONCTION INTERNE : SYSTÈME DE LOGIN (REMIS EN PLACE) ] ---
+-- --- [ FONCTION LOGIN (INCHANGÉE) ] ---
 local function SpawnLoginSystem(SettingsLogin)
     local Validated = false
     local RealPassword = SettingsLogin.Key or "1234"
-    
-    -- Si la clé est un lien, on va chercher le texte sur le site
     if SettingsLogin.GrabKeyFromSite == true then
         pcall(function()
             local content = game:HttpGet(SettingsLogin.Key)
-            RealPassword = string.gsub(content, "%s+", "") -- Nettoyage du texte
+            RealPassword = string.gsub(content, "%s+", "")
         end)
     end
-
-    -- Création du GUI Login
     local LoginGui = Instance.new("ScreenGui")
     LoginGui.Name = "SoroniceLoginSystem"
     LoginGui.Parent = CoreGui
     LoginGui.ResetOnSpawn = false
-    
     local BlurEffect = Instance.new("BlurEffect")
     BlurEffect.Parent = game.Lighting
     BlurEffect.Size = 24
-    
-    -- Image de fond (Le cadre vert/noir)
     local BackgroundImage = Instance.new("ImageLabel")
     BackgroundImage.Parent = LoginGui
     BackgroundImage.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -56,8 +54,6 @@ local function SpawnLoginSystem(SettingsLogin)
     BackgroundImage.Size = UDim2.new(0, 500, 0, 350)
     BackgroundImage.Image = "rbxassetid://114617892791025"
     BackgroundImage.BackgroundTransparency = 1
-    
-    -- Titre
     local TitleText = Instance.new("TextLabel")
     TitleText.Parent = BackgroundImage
     TitleText.BackgroundTransparency = 1
@@ -68,28 +64,19 @@ local function SpawnLoginSystem(SettingsLogin)
     TitleText.TextColor3 = Color3.new(1,1,1)
     TitleText.TextScaled = true
     TitleText.TextXAlignment = Enum.TextXAlignment.Left
-    
-    -- Bouton Fermer
     local CloseButton = Instance.new("TextButton")
     CloseButton.Parent = BackgroundImage
     CloseButton.BackgroundTransparency = 1
     CloseButton.Position = UDim2.new(0.92, 0, 0.14, 0)
     CloseButton.Size = UDim2.new(0.06, 0, 0.08, 0)
     CloseButton.Text = ""
-    CloseButton.MouseButton1Click:Connect(function() 
-        LoginGui:Destroy()
-        BlurEffect:Destroy()
-        script:Destroy() 
-    end)
-    
-    -- Champ Mot de Passe
+    CloseButton.MouseButton1Click:Connect(function() LoginGui:Destroy() BlurEffect:Destroy() script:Destroy() end)
     local InputBg = Instance.new("ImageLabel")
     InputBg.Parent = BackgroundImage
     InputBg.BackgroundTransparency = 1
     InputBg.Position = UDim2.new(0.18, 0, 0.42, 0)
     InputBg.Size = UDim2.new(0.62, 0, 0.15, 0)
     InputBg.Image = "rbxassetid://75238927890132"
-
     local PasswordBox = Instance.new("TextBox")
     PasswordBox.Parent = InputBg
     PasswordBox.BackgroundTransparency = 1
@@ -101,8 +88,6 @@ local function SpawnLoginSystem(SettingsLogin)
     PasswordBox.TextColor3 = Color3.new(1,1,1)
     PasswordBox.TextSize = 18
     PasswordBox.TextXAlignment = Enum.TextXAlignment.Left
-    
-    -- Bouton Valider
     local ValidateBtn = Instance.new("TextButton")
     ValidateBtn.Parent = BackgroundImage
     ValidateBtn.BackgroundColor3 = Color3.fromRGB(167, 167, 167)
@@ -113,8 +98,6 @@ local function SpawnLoginSystem(SettingsLogin)
     ValidateBtn.Font = Enum.Font.SourceSansBold
     ValidateBtn.TextSize = 18
     Instance.new("UICorner", ValidateBtn).CornerRadius = UDim.new(0, 10)
-    
-    -- Bouton Lien
     local LinkBtn = Instance.new("TextButton")
     LinkBtn.Parent = BackgroundImage
     LinkBtn.BackgroundColor3 = Color3.fromRGB(167, 167, 167)
@@ -125,54 +108,72 @@ local function SpawnLoginSystem(SettingsLogin)
     LinkBtn.Font = Enum.Font.SourceSans
     LinkBtn.TextSize = 14
     Instance.new("UICorner", LinkBtn).CornerRadius = UDim.new(0, 10)
-    
     local function Verify()
-        if PasswordBox.Text == RealPassword then 
-            Validated = true
-            LoginGui:Destroy()
-            BlurEffect:Destroy()
-        else 
-            PasswordBox.Text = ""
-            PasswordBox.PlaceholderText = "Mot de passe INCORRECT !" 
-            wait(1.5) 
-            PasswordBox.PlaceholderText = "Entrez la clé ici..."
-        end
+        if PasswordBox.Text == RealPassword then Validated = true LoginGui:Destroy() BlurEffect:Destroy()
+        else PasswordBox.Text = "" PasswordBox.PlaceholderText = "Mot de passe INCORRECT !" wait(1.5) PasswordBox.PlaceholderText = "Entrez la clé ici..." end
     end
-    
     ValidateBtn.MouseButton1Click:Connect(Verify)
     LinkBtn.MouseButton1Click:Connect(function()
-        if SettingsLogin.Link then 
-            setclipboard(SettingsLogin.Link)
-            LinkBtn.Text = "Lien copié !"
-            wait(2)
-            LinkBtn.Text = SettingsLogin.LinkText or "Obtenir la clé"
-        end
+        if SettingsLogin.Link then setclipboard(SettingsLogin.Link) LinkBtn.Text = "Lien copié !" wait(2) LinkBtn.Text = SettingsLogin.LinkText or "Obtenir la clé" end
     end)
-    
-    -- On bloque tout tant que le mot de passe n'est pas bon
     repeat wait() until Validated or not LoginGui.Parent
     if not Validated then script:Destroy() while true do wait(999) end end
 end
 
 
--- --- [ DÉBUT DE LA CRÉATION DE LA FENÊTRE ] ---
+-- --- [ CRÉATION DE LA FENÊTRE ] ---
 
 function SoroniceLib:CreateWindow(Config)
-    -- Lancement du Login si activé (C'est ça qui manquait !)
-    if Config.KeySystem == true then
-        SpawnLoginSystem(Config.KeySettings or {})
-    end
+    if Config.KeySystem == true then SpawnLoginSystem(Config.KeySettings or {}) end
 
 	local TitleName = Config.Name or "SORONICE HUB"
-
-	if CoreGui:FindFirstChild("Soronice_V6") then
-		CoreGui:FindFirstChild("Soronice_V6"):Destroy()
-	end
+	if CoreGui:FindFirstChild("Soronice_V6") then CoreGui:FindFirstChild("Soronice_V6"):Destroy() end
 
 	local ScreenGui = Instance.new("ScreenGui")
 	ScreenGui.Name = "Soronice_V6"
 	ScreenGui.Parent = CoreGui
     ScreenGui.ResetOnSpawn = false
+
+    -- [AJOUT MOBILE] : Création du bouton "Maison" pour mobile
+    local MobileOpenBtn = nil
+    if IsMobile then
+        MobileOpenBtn = Instance.new("ImageButton")
+        MobileOpenBtn.Name = "MobileOpenButton"
+        MobileOpenBtn.Parent = ScreenGui
+        MobileOpenBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        MobileOpenBtn.BackgroundTransparency = 0.2
+        MobileOpenBtn.Position = UDim2.new(0.1, 0, 0.1, 0) -- Position par défaut
+        MobileOpenBtn.Size = UDim2.new(0, 50, 0, 50)
+        MobileOpenBtn.Image = "rbxassetid://3926307971" -- ID d'une icône "Maison" générique (tu peux changer)
+        MobileOpenBtn.Visible = false -- Caché au départ
+        Instance.new("UICorner", MobileOpenBtn).CornerRadius = UDim.new(0, 12)
+        
+        -- Rendre le bouton mobile déplaçable
+        local dragging_mob, dragInput_mob, dragStart_mob, startPos_mob
+        MobileOpenBtn.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging_mob = true
+                dragStart_mob = input.Position
+                startPos_mob = MobileOpenBtn.Position
+            end
+        end)
+        MobileOpenBtn.InputChanged:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+                dragInput_mob = input
+            end
+        end)
+        UserInputService.InputChanged:Connect(function(input)
+            if input == dragInput_mob and dragging_mob then
+                local delta = input.Position - dragStart_mob
+                MobileOpenBtn.Position = UDim2.new(startPos_mob.X.Scale, startPos_mob.X.Offset + delta.X, startPos_mob.Y.Scale, startPos_mob.Y.Offset + delta.Y)
+            end
+        end)
+        UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging_mob = false
+            end
+        end)
+    end
 
 	-- MAIN FRAME
 	local MainFrame = Instance.new("Frame")
@@ -187,7 +188,6 @@ function SoroniceLib:CreateWindow(Config)
 	MainCorner.CornerRadius = UDim.new(0, 10)
 	MainCorner.Parent = MainFrame
 
-    -- [ZONE BLANCHE] : BARRE DE DÉPLACEMENT
 	local TopBar = Instance.new("Frame")
 	TopBar.Name = "TopBar"
 	TopBar.Parent = MainFrame
@@ -195,6 +195,7 @@ function SoroniceLib:CreateWindow(Config)
 	TopBar.Size = UDim2.new(1, 0, 0, 40)
     TopBar.Position = UDim2.new(0,0,0,0)
 
+    -- Déplacement de la fenêtre principale
 	local dragging, dragInput, dragStart, startPos
 	TopBar.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -220,7 +221,6 @@ function SoroniceLib:CreateWindow(Config)
 		end
 	end)
 
-	-- TITRE
 	local TitleLabel = Instance.new("TextLabel")
 	TitleLabel.Parent = TopBar
 	TitleLabel.BackgroundTransparency = 1
@@ -232,7 +232,6 @@ function SoroniceLib:CreateWindow(Config)
 	TitleLabel.TextSize = 22
 	TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-    -- [ZONE ROUGE] : LE BOUTON MOINS (-)
 	local MinBtn = Instance.new("TextButton")
 	MinBtn.Name = "Minimize"
 	MinBtn.Parent = TopBar
@@ -244,32 +243,46 @@ function SoroniceLib:CreateWindow(Config)
 	MinBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 	MinBtn.TextSize = 24
     
+    -- [MODIF MOBILE] : Logique de visibilité adaptée
 	local IsHidden = false
     local NotifShown = false 
 
     local function ToggleVisibility()
         IsHidden = not IsHidden
         MainFrame.Visible = not IsHidden
-        if IsHidden and not NotifShown then
-            NotifShown = true
-            game.StarterGui:SetCore("SendNotification", {
-                Title = "Soronice Hub",
-                Text = "Appuie sur '" .. UserInputService:GetStringForKeyCode(Settings.Keybind) .. "' pour rouvrir.",
-                Duration = 5
-            })
+        
+        if IsMobile then
+            -- Sur mobile : on affiche/cache le bouton maison
+            if MobileOpenBtn then
+                MobileOpenBtn.Visible = IsHidden
+            end
+        else
+            -- Sur PC : on affiche la notif une seule fois
+            if IsHidden and not NotifShown then
+                NotifShown = true
+                game.StarterGui:SetCore("SendNotification", {
+                    Title = "Soronice Hub",
+                    Text = "Appuie sur '" .. UserInputService:GetStringForKeyCode(Settings.Keybind) .. "' pour rouvrir.",
+                    Duration = 5
+                })
+            end
         end
     end
 
 	MinBtn.MouseButton1Click:Connect(ToggleVisibility)
+    
+    -- Si on est sur mobile, le bouton maison rouvre le menu
+    if IsMobile and MobileOpenBtn then
+        MobileOpenBtn.MouseButton1Click:Connect(ToggleVisibility)
+    end
 
-    -- Gestion de la touche clavier (Le "P")
+    -- Gestion de la touche P (PC uniquement)
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
-        if not gameProcessed and input.KeyCode == Settings.Keybind then
+        if not IsMobile and not gameProcessed and input.KeyCode == Settings.Keybind then
             ToggleVisibility()
         end
     end)
 
-	-- BOUTON FERMER (X)
 	local CloseBtn = Instance.new("TextButton")
 	CloseBtn.Name = "Close"
 	CloseBtn.Parent = TopBar
@@ -280,23 +293,17 @@ function SoroniceLib:CreateWindow(Config)
 	CloseBtn.Text = "X"
 	CloseBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 	CloseBtn.TextSize = 20
-	
-	CloseBtn.MouseButton1Click:Connect(function()
-		ScreenGui:Destroy()
-	end)
+	CloseBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
 
-	-- SIDEBAR
 	local Sidebar = Instance.new("Frame")
 	Sidebar.Parent = MainFrame
 	Sidebar.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 	Sidebar.BackgroundTransparency = 0.5
 	Sidebar.Position = UDim2.new(0, 10, 0, 50)
 	Sidebar.Size = UDim2.new(0, 60, 0, 290)
-	
 	local SidebarCorner = Instance.new("UICorner")
 	SidebarCorner.CornerRadius = UDim.new(0, 8)
 	SidebarCorner.Parent = Sidebar
-
 	local SidebarLayout = Instance.new("UIListLayout")
 	SidebarLayout.Parent = Sidebar
 	SidebarLayout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -304,14 +311,12 @@ function SoroniceLib:CreateWindow(Config)
 	SidebarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
     SidebarLayout.VerticalAlignment = Enum.VerticalAlignment.Top
 
-	-- CONTENU
 	local ContentContainer = Instance.new("Frame")
 	ContentContainer.Parent = MainFrame
 	ContentContainer.BackgroundTransparency = 1
 	ContentContainer.Position = UDim2.new(0, 80, 0, 50)
 	ContentContainer.Size = UDim2.new(0, 460, 0, 290)
 
-    -- [ZONE BLEUE] : BOUTON RÉGLAGES
 	local SettingsBtn = Instance.new("TextButton")
 	SettingsBtn.Name = "Settings_Btn"
 	SettingsBtn.Parent = MainFrame 
@@ -321,7 +326,6 @@ function SoroniceLib:CreateWindow(Config)
 	SettingsBtn.Size = UDim2.new(0, 45, 0, 45)
 	SettingsBtn.Text = ""
     Instance.new("UICorner", SettingsBtn).CornerRadius = UDim.new(0, 8)
-    
 	local SettingsIcon = Instance.new("ImageLabel")
 	SettingsIcon.Parent = SettingsBtn
 	SettingsIcon.BackgroundTransparency = 1
@@ -329,7 +333,6 @@ function SoroniceLib:CreateWindow(Config)
 	SettingsIcon.Size = UDim2.new(0, 35, 0, 35)
 	SettingsIcon.Image = "rbxassetid://74182569229556"
 
-    -- PAGE RÉGLAGES
     local SettingsPage = Instance.new("ScrollingFrame")
     SettingsPage.Name = "Settings_Page"
     SettingsPage.Parent = ContentContainer
@@ -337,21 +340,20 @@ function SoroniceLib:CreateWindow(Config)
     SettingsPage.Size = UDim2.new(1, 0, 1, 0)
     SettingsPage.ScrollBarThickness = 2
     SettingsPage.Visible = false 
+    -- [AJOUT SCROLLING] : Canvas automatique pour les réglages
+    SettingsPage.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    SettingsPage.CanvasSize = UDim2.new(0,0,0,0)
 
     local SettingsLayout = Instance.new("UIListLayout")
     SettingsLayout.Parent = SettingsPage
     SettingsLayout.Padding = UDim.new(0, 8)
+    SettingsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
-    -- Ouverture réglages
     SettingsBtn.MouseButton1Click:Connect(function()
-        for _, v in pairs(ContentContainer:GetChildren()) do
-            v.Visible = false
-        end
+        for _, v in pairs(ContentContainer:GetChildren()) do v.Visible = false end
         SettingsPage.Visible = true
         for _, btn in pairs(Sidebar:GetChildren()) do
-            if btn:IsA("TextButton") then
-                TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0,0,0)}):Play()
-            end
+            if btn:IsA("TextButton") then TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0,0,0)}):Play() end
         end
         TweenService:Create(SettingsBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(40,40,40)}):Play()
     end)
@@ -359,7 +361,6 @@ function SoroniceLib:CreateWindow(Config)
 	local WindowFunctions = {}
 	local FirstTab = true
 
-    -- CREATION ELEMENTS
     local function CreateElement(Page, Type, Config)
         if Type == "Button" then
             local BtnFrame = Instance.new("Frame", Page)
@@ -372,7 +373,6 @@ function SoroniceLib:CreateWindow(Config)
                 TweenService:Create(BtnFrame, TweenInfo.new(0.1), {BackgroundColor3=Color3.fromRGB(30,30,30)}):Play()
                 Config.Callback() 
             end)
-
         elseif Type == "Toggle" then
             local ToggleFrame = Instance.new("Frame", Page); ToggleFrame.BackgroundTransparency=1; ToggleFrame.Size=UDim2.new(1,-10,0,35)
             local Label = Instance.new("TextLabel", ToggleFrame); Label.BackgroundTransparency=1; Label.Size=UDim2.new(0.7,0,1,0); Label.Position=UDim2.new(0,10,0,0); Label.Text=Config.Name; Label.TextColor3=Color3.new(1,1,1); Label.TextXAlignment=Enum.TextXAlignment.Left; Label.TextSize=16; Label.Font=Enum.Font.SourceSans
@@ -391,19 +391,16 @@ function SoroniceLib:CreateWindow(Config)
             if Toggled then Update() end
             local Btn = Instance.new("TextButton", SwitchBg); Btn.BackgroundTransparency=1; Btn.Size=UDim2.new(1,0,1,0); Btn.Text=""
             Btn.MouseButton1Click:Connect(function() Toggled = not Toggled; Update() end)
-
         elseif Type == "Keybind" then
             local BindFrame = Instance.new("Frame", Page)
             BindFrame.BackgroundColor3 = Color3.fromRGB(30,30,30); BindFrame.Size=UDim2.new(1,-10,0,35)
             Instance.new("UICorner", BindFrame).CornerRadius = UDim.new(0,6)
             local Label = Instance.new("TextLabel", BindFrame); Label.BackgroundTransparency=1; Label.Size=UDim2.new(0.7,0,1,0); Label.Position=UDim2.new(0,10,0,0); Label.Text=Config.Name; Label.TextColor3=Color3.new(1,1,1); Label.TextXAlignment=Enum.TextXAlignment.Left; Label.TextSize=16; Label.Font=Enum.Font.SourceSans
-            
             local BindBtn = Instance.new("TextButton", BindFrame)
             BindBtn.BackgroundColor3 = Color3.fromRGB(40,40,40); BindBtn.Position=UDim2.new(1,-80,0.5,-12); BindBtn.Size=UDim2.new(0,70,0,24)
             BindBtn.Text = UserInputService:GetStringForKeyCode(Settings.Keybind)
             BindBtn.Font = Enum.Font.SourceSansBold; BindBtn.TextColor3 = Color3.new(1,1,1); BindBtn.TextSize = 14
             Instance.new("UICorner", BindBtn).CornerRadius=UDim.new(0,6)
-
             BindBtn.MouseButton1Click:Connect(function()
                 BindBtn.Text = "..."
                 local InputConnection
@@ -411,7 +408,7 @@ function SoroniceLib:CreateWindow(Config)
                     if input.UserInputType == Enum.UserInputType.Keyboard then
                         Settings.Keybind = input.KeyCode
                         BindBtn.Text = UserInputService:GetStringForKeyCode(input.KeyCode)
-                        InputConnection:Disconnect() -- On coupe l'écoute immédiatement
+                        InputConnection:Disconnect()
                         game.StarterGui:SetCore("SendNotification", {Title = "Réglages", Text = "Nouvelle touche : " .. BindBtn.Text, Duration = 3})
                     end
                 end)
@@ -419,24 +416,23 @@ function SoroniceLib:CreateWindow(Config)
         end
     end
 
-    -- REMPLISSAGE AUTOMATIQUE RÉGLAGES
     CreateElement(SettingsPage, "Toggle", {
         Name = "💤 Mode AFK (Anti-Kick)",
         CurrentValue = false,
         Callback = function(Value)
             antiAfkActive = Value
-            if Value then
-                game.StarterGui:SetCore("SendNotification", {Title = "Anti-AFK", Text = "Activé : Vous ne serez pas kické.", Duration = 3})
-            end
+            if Value then game.StarterGui:SetCore("SendNotification", {Title = "Anti-AFK", Text = "Activé : Vous ne serez pas kické.", Duration = 3}) end
         end
     })
     
-    CreateElement(SettingsPage, "Keybind", {
-        Name = "Touche pour Cacher/Montrer",
-        Callback = function() end 
-    })
+    -- [MODIF MOBILE] : On n'affiche pas le changement de touche sur mobile
+    if not IsMobile then
+        CreateElement(SettingsPage, "Keybind", {
+            Name = "Touche pour Cacher/Montrer",
+            Callback = function() end 
+        })
+    end
 
-	-- :: FONCTIONS UTILISATEUR :: --
 	function WindowFunctions:CreateTab(TabName, TabImageId)
 		local TabBtn = Instance.new("TextButton", Sidebar)
 		TabBtn.BackgroundColor3 = Color3.new(0,0,0); TabBtn.BackgroundTransparency=0.5; TabBtn.Size=UDim2.new(0,45,0,45); TabBtn.Text=""
@@ -448,9 +444,16 @@ function SoroniceLib:CreateWindow(Config)
 			TabBtn.Text = string.sub(TabName, 1, 1); TabBtn.TextColor3 = Color3.new(0.8,0.8,0.8); TabBtn.TextSize=20; TabBtn.Font=Enum.Font.SourceSansBold
 		end
 
+        -- [AJOUT SCROLLING] : On change Frame en ScrollingFrame ici aussi
 		local Page = Instance.new("ScrollingFrame", ContentContainer)
 		Page.BackgroundTransparency=1; Page.Size=UDim2.new(1,0,1,0); Page.ScrollBarThickness=2; Page.Visible=FirstTab
-        Instance.new("UIListLayout", Page).Padding = UDim.new(0,8)
+        -- Activation du canvas automatique pour que ça scroll si ça déborde
+        Page.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        Page.CanvasSize = UDim2.new(0,0,0,0)
+
+        local PageLayout = Instance.new("UIListLayout", Page)
+        PageLayout.Padding = UDim.new(0,8)
+        PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
 		TabBtn.MouseButton1Click:Connect(function()
 			for _,v in pairs(ContentContainer:GetChildren()) do v.Visible=false end
@@ -460,15 +463,11 @@ function SoroniceLib:CreateWindow(Config)
 		FirstTab = false
 
 		local TabFunctions = {}
-        
 		function TabFunctions:CreateButton(Config) CreateElement(Page, "Button", Config) end
         function TabFunctions:CreateToggle(Config) CreateElement(Page, "Toggle", Config) end
-        
-        -- Fonctions vides pour éviter les erreurs (Demandé précédemment)
         function TabFunctions:CreateColorPicker(Config) end 
         function TabFunctions:CreateSection(Name) end
         function TabFunctions:CreateLabel(Text) end
-
         function TabFunctions:CreateSlider(Config)
              local SliderFrame = Instance.new("Frame", Page); SliderFrame.BackgroundTransparency=1; SliderFrame.Size=UDim2.new(1,-10,0,50)
              local Label = Instance.new("TextLabel", SliderFrame); Label.BackgroundTransparency=1; Label.Position=UDim2.new(0,10,0,0); Label.Size=UDim2.new(1,0,0,20); Label.Text=Config.Name; Label.TextColor3=Color3.new(1,1,1); Label.TextXAlignment=Enum.TextXAlignment.Left; Label.Font=Enum.Font.SourceSans; Label.TextSize=16
