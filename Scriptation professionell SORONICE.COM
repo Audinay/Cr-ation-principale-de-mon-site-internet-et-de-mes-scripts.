@@ -1,10 +1,11 @@
--- [[ SORONICE UI LIBRARY - V4.6 (MODES DE VERROUILLAGE : BUTTON vs FRAME) ]] --
+-- [[ SORONICE UI LIBRARY - V5.0 (ANIMATIONS + SAVE SYSTEM + AUTO-STOP) ]] --
 
 local SoroniceLib = {}
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local MarketplaceService = game:GetService("MarketplaceService") 
+local HttpService = game:GetService("HttpService") -- AJOUTÉ POUR LA SAUVEGARDE
 local LocalPlayer = game.Players.LocalPlayer
 local CoreGui = game:GetService("CoreGui")
 local VirtualUser = game:GetService("VirtualUser")
@@ -19,6 +20,29 @@ local Settings = {
 	ThemeColor = Color3.fromRGB(20, 20, 20),
 	AccentColor = Color3.fromRGB(0, 54, 203)
 }
+
+-- --- [ SYSTÈME DE SAUVEGARDE ] ---
+local ConfigName = "Soronice_Config.json"
+local LibrarySettings = {} -- Stocke les valeurs actuelles
+local TogglesToStop = {} -- Liste pour arrêter les scripts à la fermeture
+
+local function SaveSettings()
+    if writefile then
+        pcall(function()
+            writefile(ConfigName, HttpService:JSONEncode(LibrarySettings))
+        end)
+    end
+end
+
+local function LoadSettings()
+    if readfile and isfile and isfile(ConfigName) then
+        local Success, Result = pcall(function()
+            return HttpService:JSONDecode(readfile(ConfigName))
+        end)
+        if Success then return Result else return {} end
+    end
+    return {}
+end
 
 -- --- [ SYSTÈME AFK ] ---
 local antiAfkActive = false
@@ -123,6 +147,9 @@ end
 -- --- [ CRÉATION DE LA FENÊTRE ] ---
 
 function SoroniceLib:CreateWindow(Config)
+    -- Chargement des sauvegardes au lancement
+    local SavedData = LoadSettings()
+
     if Config.KeySystem == true then SpawnLoginSystem(Config.KeySettings or {}) end
 
 	local TitleName = Config.Name or "SORONICE HUB"
@@ -133,14 +160,13 @@ function SoroniceLib:CreateWindow(Config)
 	ScreenGui.Parent = CoreGui
     ScreenGui.ResetOnSpawn = false
 
-    -- [APPLY LOCK FUNCTION]
+    -- [FONCTION APPLY LOCK]
     local function ApplyLock(TargetFrame, ElementConfig)
         if not ElementConfig then return false end
         
         local IsLocked = ElementConfig.Locked or false
         local LockReason = nil 
 
-        -- Check Ban
         if ElementConfig.BannedUsers and type(ElementConfig.BannedUsers) == "table" then
             for _, bannedId in pairs(ElementConfig.BannedUsers) do
                 if LocalPlayer.UserId == bannedId then
@@ -151,7 +177,6 @@ function SoroniceLib:CreateWindow(Config)
             end
         end
 
-        -- Check Gamepass
         if not LockReason and ElementConfig.GamePassID then
             IsLocked = true 
             LockReason = "Gamepass"
@@ -159,35 +184,26 @@ function SoroniceLib:CreateWindow(Config)
 
         if IsLocked then
             TargetFrame.ClipsDescendants = true 
-
             local LockOverlay = Instance.new("ImageButton")
             LockOverlay.Name = "LockOverlay"
             LockOverlay.Parent = TargetFrame
             LockOverlay.BackgroundTransparency = 1
             LockOverlay.Size = UDim2.new(1, 0, 1, 0)
             LockOverlay.Position = UDim2.new(0, 0, 0, 0)
-            LockOverlay.ZIndex = 50 -- TRÈS HAUT
-            
-            -- [ID CADENAS FIXE]
+            LockOverlay.ZIndex = 50 
             LockOverlay.Image = "rbxassetid://139868914964686" 
             LockOverlay.ImageTransparency = 0.53 
-            
             LockOverlay.MouseButton1Click:Connect(function()
                 if LockReason == "Gamepass" and ElementConfig.GamePassID then
                     MarketplaceService:PromptGamePassPurchase(LocalPlayer, ElementConfig.GamePassID)
                 elseif LockReason == "Banned" then
-                    game.StarterGui:SetCore("SendNotification", {
-                        Title = "Accès Refusé",
-                        Text = "Vous n'avez pas la permission d'utiliser cette fonctionnalité.",
-                        Duration = 3
-                    })
+                    game.StarterGui:SetCore("SendNotification", {Title = "Accès Refusé", Text = "Permission refusée.", Duration = 3})
                 end
             end)
             return true 
         end
         return false 
     end
-
 
     -- [BOUTON MAISON MOBILE]
     local MobileOpenBtn = nil
@@ -202,7 +218,6 @@ function SoroniceLib:CreateWindow(Config)
         MobileOpenBtn.Image = Config.MobileImage or "rbxassetid://133601263847208"
         MobileOpenBtn.Visible = false 
         Instance.new("UICorner", MobileOpenBtn).CornerRadius = UDim.new(0, 12)
-        
         local dragging_mob, dragInput_mob, dragStart_mob, startPos_mob
         MobileOpenBtn.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -236,13 +251,20 @@ function SoroniceLib:CreateWindow(Config)
 	MainFrame.BackgroundColor3 = Settings.ThemeColor
 	MainFrame.BackgroundTransparency = 0.2
     
+    -- Taille Finale Cible
+    local TargetSize
     if IsMobile then
         MainFrame.Position = UDim2.new(0.5, -200, 0.5, -130)
-	    MainFrame.Size = UDim2.new(0, 400, 0, 260)
+        TargetSize = UDim2.new(0, 400, 0, 260)
     else
 	    MainFrame.Position = UDim2.new(0.5, -250, 0.5, -175)
-	    MainFrame.Size = UDim2.new(0, 550, 0, 350)
+        TargetSize = UDim2.new(0, 550, 0, 350)
     end
+    
+    -- [ANIMATION D'OUVERTURE] : Commence à 0 et grandit
+    MainFrame.Size = UDim2.new(0, 0, 0, 0)
+    MainFrame.ClipsDescendants = true -- Important pour l'anim
+    TweenService:Create(MainFrame, TweenInfo.new(0.7, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = TargetSize}):Play()
 	
 	local MainCorner = Instance.new("UICorner")
 	MainCorner.CornerRadius = UDim.new(0, 10)
@@ -291,7 +313,6 @@ function SoroniceLib:CreateWindow(Config)
 	TitleLabel.TextSize = 22
 	TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-    -- [BOUTON MOINS]
 	local MinBtn = Instance.new("TextButton")
 	MinBtn.Name = "Minimize"
 	MinBtn.Parent = TopBar
@@ -309,34 +330,23 @@ function SoroniceLib:CreateWindow(Config)
     local function ToggleVisibility()
         IsHidden = not IsHidden
         MainFrame.Visible = not IsHidden
-        
         if IsMobile then
-            if MobileOpenBtn then
-                MobileOpenBtn.Visible = IsHidden
-            end
+            if MobileOpenBtn then MobileOpenBtn.Visible = IsHidden end
         else
             if IsHidden and not NotifShown then
                 NotifShown = true
-                game.StarterGui:SetCore("SendNotification", {
-                    Title = "Soronice Hub",
-                    Text = "Appuie sur '" .. UserInputService:GetStringForKeyCode(Settings.Keybind) .. "' pour rouvrir.",
-                    Duration = 5
-                })
+                game.StarterGui:SetCore("SendNotification", {Title = "Soronice Hub", Text = "Appuie sur P", Duration = 5})
             end
         end
     end
 
 	MinBtn.MouseButton1Click:Connect(ToggleVisibility)
-    if IsMobile and MobileOpenBtn then
-        MobileOpenBtn.MouseButton1Click:Connect(ToggleVisibility)
-    end
-
+    if IsMobile and MobileOpenBtn then MobileOpenBtn.MouseButton1Click:Connect(ToggleVisibility) end
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
-        if not IsMobile and not gameProcessed and input.KeyCode == Settings.Keybind then
-            ToggleVisibility()
-        end
+        if not IsMobile and not gameProcessed and input.KeyCode == Settings.Keybind then ToggleVisibility() end
     end)
 
+    -- [BOUTON CROIX / FERMETURE AVEC SAUVEGARDE & ANIMATION]
 	local CloseBtn = Instance.new("TextButton")
 	CloseBtn.Name = "Close"
 	CloseBtn.Parent = TopBar
@@ -347,7 +357,25 @@ function SoroniceLib:CreateWindow(Config)
 	CloseBtn.Text = "X"
 	CloseBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 	CloseBtn.TextSize = 20
-	CloseBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
+	CloseBtn.MouseButton1Click:Connect(function() 
+        -- 1. SAUVEGARDER L'ÉTAT
+        SaveSettings()
+        
+        -- 2. ARRÊTER TOUS LES SCRIPTS (Désactiver les toggles)
+        for _, toggleData in pairs(TogglesToStop) do
+            if toggleData.Callback then
+                -- On appelle le callback avec false pour stopper le script
+                toggleData.Callback(false) 
+            end
+        end
+        
+        -- 3. ANIMATION DE FERMETURE (Rétrécissement)
+        local CloseTween = TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Size = UDim2.new(0,0,0,0)})
+        CloseTween:Play()
+        CloseTween.Completed:Wait() -- On attend la fin de l'anim
+        
+        ScreenGui:Destroy() 
+    end)
 
 	local Sidebar = Instance.new("Frame")
 	Sidebar.Parent = MainFrame
@@ -360,7 +388,6 @@ function SoroniceLib:CreateWindow(Config)
 	SidebarCorner.CornerRadius = UDim.new(0, 8)
 	SidebarCorner.Parent = Sidebar
     
-    -- [SIDEBAR SCROLLING SÉPARÉ]
     local SidebarScroll = Instance.new("ScrollingFrame")
     SidebarScroll.Parent = Sidebar
     SidebarScroll.BackgroundTransparency = 1
@@ -464,14 +491,31 @@ function SoroniceLib:CreateWindow(Config)
             
             local Locked = ApplyLock(ToggleFrame, Config)
 
+            -- CHARGEMENT DE LA SAUVEGARDE
             local Toggled = Config.CurrentValue or false
+            if Config.Flag and SavedData[Config.Flag] ~= nil then
+                Toggled = SavedData[Config.Flag]
+            end
+
+            -- Ajout à la liste d'arrêt (Pour la fermeture)
+            table.insert(TogglesToStop, {
+                Callback = Config.Callback,
+                Flag = Config.Flag
+            })
+
             local function Update()
                 local TargetPos = Toggled and UDim2.new(1,-22,0.5,-10) or UDim2.new(0,2,0.5,-10)
                 local TargetCol = Toggled and Settings.AccentColor or Color3.fromRGB(40,40,40)
                 TweenService:Create(Knob, TweenInfo.new(0.2), {Position=TargetPos}):Play()
                 TweenService:Create(SwitchBg, TweenInfo.new(0.2), {BackgroundColor3=TargetCol}):Play()
+                
+                -- MISE A JOUR DES DONNÉES LIVE
+                if Config.Flag then LibrarySettings[Config.Flag] = Toggled end
+                
                 if Config.Callback then Config.Callback(Toggled) end
             end
+            
+            -- Si c'était sauvegardé comme activé, on lance l'update (donc on lance le script)
             if Toggled then Update() end
             
             local Btn = Instance.new("TextButton", SwitchBg); Btn.BackgroundTransparency=1; Btn.Size=UDim2.new(1,0,1,0); Btn.Text=""
@@ -617,15 +661,10 @@ function SoroniceLib:CreateWindow(Config)
 			TabBtn.Text = string.sub(TabName, 1, 1); TabBtn.TextColor3 = Color3.new(0.8,0.8,0.8); TabBtn.TextSize=20; TabBtn.Font=Enum.Font.SourceSansBold
 		end
 
-        -- [2 MODES DE BLOCAGE]
+        -- [APPLY LOCK ON TAB]
+        local IsTabLocked = false
         if LockConfig and LockConfig.Locked then
-             -- SI MODE "Frame" (Contenu bloqué mais on peut entrer)
-             if LockConfig.LockMode == "Frame" then
-                 -- On ne bloque pas le bouton ici, le cadenas sera sur la page
-             else 
-                 -- SINON (Mode "Button" par défaut) : On bloque le bouton
-                 ApplyLock(TabBtn, LockConfig)
-             end
+             if LockConfig.LockMode == "Frame" then else ApplyLock(TabBtn, LockConfig) end
         end
 
 		local Page = Instance.new("ScrollingFrame", ContentContainer)
@@ -638,17 +677,19 @@ function SoroniceLib:CreateWindow(Config)
         PageLayout.Padding = UDim.new(0,8)
         PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
-        -- [SI MODE "FRAME", ON AJOUTE LE CADENAS DANS LA PAGE]
         if LockConfig and LockConfig.Locked and LockConfig.LockMode == "Frame" then
-            ApplyLock(Page, LockConfig) -- Le cadenas couvre le contenu de la page
+            ApplyLock(Page, LockConfig) 
         end
 
 		TabBtn.MouseButton1Click:Connect(function()
-            -- Si c'est le mode "Button", le cadenas empêche déjà le clic.
-            -- Si c'est le mode "Frame", on peut cliquer pour voir le contenu (qui sera couvert par le cadenas).
-			for _,v in pairs(ContentContainer:GetChildren()) do v.Visible=false end
-			Page.Visible=true
-            TweenService:Create(SettingsBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0,0,0)}):Play()
+            local Allowed, Reason = CheckAccess(LockConfig)
+            if Allowed or (LockConfig and LockConfig.LockMode == "Frame") then
+    			for _,v in pairs(ContentContainer:GetChildren()) do v.Visible=false end
+    			Page.Visible=true
+                TweenService:Create(SettingsBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0,0,0)}):Play()
+            else
+                TriggerLockAction(Reason, LockConfig and LockConfig.GamePassID)
+            end
 		end)
 		FirstTab = false
 
