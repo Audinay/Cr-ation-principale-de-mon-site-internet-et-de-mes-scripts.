@@ -1,9 +1,10 @@
--- [[ SORONICE UI LIBRARY - V4.0 (COLOR PICKER PRO + INPUTS PRÉCIS) ]] --
+-- [[ SORONICE UI LIBRARY - V4.1 (SYSTÈME DE VEROUILLAGE GAMEPASS/BAN AJOUTÉ) ]] --
 
 local SoroniceLib = {}
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
+local MarketplaceService = game:GetService("MarketplaceService") -- AJOUTÉ POUR LES PASS
 local LocalPlayer = game.Players.LocalPlayer
 local CoreGui = game:GetService("CoreGui")
 local VirtualUser = game:GetService("VirtualUser")
@@ -132,6 +133,66 @@ function SoroniceLib:CreateWindow(Config)
 	ScreenGui.Parent = CoreGui
     ScreenGui.ResetOnSpawn = false
 
+    -- [NOUVELLE FONCTION INTERNE : APPLIQUER LE CADENAS]
+    local function ApplyLock(TargetFrame, ElementConfig)
+        -- Vérifie si l'élément doit être bloqué
+        local IsLocked = ElementConfig.Locked or false
+        local LockReason = nil -- "Gamepass" ou "Banned"
+
+        -- Vérification Ban
+        if ElementConfig.BannedUsers and type(ElementConfig.BannedUsers) == "table" then
+            for _, bannedId in pairs(ElementConfig.BannedUsers) do
+                if LocalPlayer.UserId == bannedId then
+                    IsLocked = true
+                    LockReason = "Banned"
+                    break
+                end
+            end
+        end
+
+        -- Vérification Gamepass (Seulement si pas déjà banni et si un ID est fourni)
+        if not LockReason and ElementConfig.GamePassID then
+            IsLocked = true -- On part du principe que c'est bloqué, le clic vérifiera l'achat
+            LockReason = "Gamepass"
+        end
+
+        if IsLocked then
+            TargetFrame.ClipsDescendants = true -- Important pour que ça ne dépasse pas
+
+            local LockOverlay = Instance.new("ImageButton")
+            LockOverlay.Name = "LockOverlay"
+            LockOverlay.Parent = TargetFrame
+            LockOverlay.BackgroundTransparency = 1
+            LockOverlay.Size = UDim2.new(1, 0, 1, 0) -- Prend toute la taille
+            LockOverlay.Position = UDim2.new(0, 0, 0, 0)
+            LockOverlay.ZIndex = 10 -- S'assure d'être au-dessus de tout
+            -- L'IMAGE QUE TU AS FOURNIE
+            LockOverlay.Image = "rbxassetid://139868914964686" 
+            -- LA TRANSPARENCE DEMANDÉE
+            LockOverlay.ImageTransparency = 0.53 
+            
+            -- Gestion du clic sur le cadenas
+            LockOverlay.MouseButton1Click:Connect(function()
+                if LockReason == "Gamepass" and ElementConfig.GamePassID then
+                    -- Tente l'achat du Gamepass
+                    MarketplaceService:PromptGamePassPurchase(LocalPlayer, ElementConfig.GamePassID)
+                elseif LockReason == "Banned" then
+                    -- Notification si banni
+                    game.StarterGui:SetCore("SendNotification", {
+                        Title = "Accès Refusé",
+                        Text = "Vous n'avez pas la permission d'utiliser cette fonctionnalité.",
+                        Duration = 3
+                    })
+                end
+            end)
+            
+            -- On retourne true pour dire que c'est bloqué et qu'il ne faut pas activer le bouton normal
+            return true 
+        end
+        return false -- Pas bloqué
+    end
+
+
     -- [BOUTON MAISON MOBILE]
     local MobileOpenBtn = nil
     if IsMobile then
@@ -162,7 +223,7 @@ function SoroniceLib:CreateWindow(Config)
         UserInputService.InputChanged:Connect(function(input)
             if input == dragInput_mob and dragging_mob then
                 local delta = input.Position - dragStart_mob
-                MobileOpenBtn.Position = UDim2.new(startPos_mob.X.Scale, startPos_mob.X.Offset + delta.X, startPos_mob.Y.Scale, startPos_mob.Y.Offset + delta.Y)
+                MobileOpenBtn.Position = UDim2.new(startPos_mob.X.Scale, startPos_mob.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
             end
         end)
         UserInputService.InputEnded:Connect(function(input)
@@ -297,16 +358,18 @@ function SoroniceLib:CreateWindow(Config)
 	Sidebar.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 	Sidebar.BackgroundTransparency = 0.5
 	Sidebar.Position = UDim2.new(0, 10, 0, 50)
-	Sidebar.Size = UDim2.new(0, 60, 0, MainFrame.Size.Y.Offset - 60)
+	Sidebar.Size = UDim2.new(0, 60, MainFrame.Size.Y.Offset - 60)
     Sidebar.ClipsDescendants = true 
 	local SidebarCorner = Instance.new("UICorner")
 	SidebarCorner.CornerRadius = UDim.new(0, 8)
 	SidebarCorner.Parent = Sidebar
     
+    -- [SIDEBAR SCROLLING SÉPARÉ]
     local SidebarScroll = Instance.new("ScrollingFrame")
     SidebarScroll.Parent = Sidebar
     SidebarScroll.BackgroundTransparency = 1
-    SidebarScroll.Size = UDim2.new(1, 0, 1, 0)
+    SidebarScroll.Position = UDim2.new(0, 0, 0, 0)
+    SidebarScroll.Size = UDim2.new(1, 0, 1, -50) 
     SidebarScroll.ScrollBarThickness = 0
     SidebarScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
     
@@ -331,10 +394,11 @@ function SoroniceLib:CreateWindow(Config)
     -- [BOUTON RÉGLAGES]
 	local SettingsBtn = Instance.new("TextButton")
 	SettingsBtn.Name = "Settings_Btn"
-	SettingsBtn.Parent = MainFrame 
+	SettingsBtn.Parent = Sidebar 
 	SettingsBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 	SettingsBtn.BackgroundTransparency = 0.5
-    SettingsBtn.Position = UDim2.new(0, 18, 1, -55)
+    SettingsBtn.Position = UDim2.new(0.5, -22, 1, -50) 
+    SettingsBtn.AnchorPoint = Vector2.new(0, 0) 
 	SettingsBtn.Size = UDim2.new(0, 45, 0, 45)
 	SettingsBtn.Text = ""
     SettingsBtn.ZIndex = 2 
@@ -381,11 +445,20 @@ function SoroniceLib:CreateWindow(Config)
             Instance.new("UICorner", BtnFrame).CornerRadius = UDim.new(0,6)
 			local Btn = Instance.new("TextButton", BtnFrame)
 			Btn.BackgroundTransparency=1; Btn.Size=UDim2.new(1,0,1,0); Btn.Font=Enum.Font.SourceSans; Btn.Text="  "..Config.Name; Btn.TextColor3=Color3.new(1,1,1); Btn.TextSize=16; Btn.TextXAlignment=Enum.TextXAlignment.Left
-			Btn.MouseButton1Click:Connect(function() 
-                TweenService:Create(BtnFrame, TweenInfo.new(0.1), {BackgroundColor3=Color3.fromRGB(50,50,50)}):Play(); wait(0.1)
-                TweenService:Create(BtnFrame, TweenInfo.new(0.1), {BackgroundColor3=Color3.fromRGB(30,30,30)}):Play()
-                Config.Callback() 
-            end)
+			
+            -- APPLICATION DU CADENAS SI NÉCESSAIRE
+            local Locked = ApplyLock(BtnFrame, Config)
+
+            if not Locked then -- Seulement si pas bloqué
+    			Btn.MouseButton1Click:Connect(function() 
+                    TweenService:Create(BtnFrame, TweenInfo.new(0.1), {BackgroundColor3=Color3.fromRGB(50,50,50)}):Play(); wait(0.1)
+                    TweenService:Create(BtnFrame, TweenInfo.new(0.1), {BackgroundColor3=Color3.fromRGB(30,30,30)}):Play()
+                    if Config.Callback then Config.Callback() end 
+                end)
+            else
+                Btn.Active = false -- Désactive le bouton sous le cadenas
+            end
+
         elseif Type == "Toggle" then
             local ToggleFrame = Instance.new("Frame", Page); ToggleFrame.BackgroundTransparency=1; ToggleFrame.Size=UDim2.new(1,-10,0,35)
             local Label = Instance.new("TextLabel", ToggleFrame); Label.BackgroundTransparency=1; Label.Size=UDim2.new(0.7,0,1,0); Label.Position=UDim2.new(0,10,0,0); Label.Text=Config.Name; Label.TextColor3=Color3.new(1,1,1); Label.TextXAlignment=Enum.TextXAlignment.Left; Label.TextSize=16; Label.Font=Enum.Font.SourceSans
@@ -393,17 +466,27 @@ function SoroniceLib:CreateWindow(Config)
             Instance.new("UICorner", SwitchBg).CornerRadius=UDim.new(1,0)
             local Knob = Instance.new("Frame", SwitchBg); Knob.BackgroundColor3=Color3.new(1,1,1); Knob.Position=UDim2.new(0,2,0.5,-10); Knob.Size=UDim2.new(0,20,0,20)
             Instance.new("UICorner", Knob).CornerRadius=UDim.new(1,0)
+            
+            -- APPLICATION DU CADENAS
+            local Locked = ApplyLock(ToggleFrame, Config)
+
             local Toggled = Config.CurrentValue or false
             local function Update()
                 local TargetPos = Toggled and UDim2.new(1,-22,0.5,-10) or UDim2.new(0,2,0.5,-10)
                 local TargetCol = Toggled and Settings.AccentColor or Color3.fromRGB(40,40,40)
                 TweenService:Create(Knob, TweenInfo.new(0.2), {Position=TargetPos}):Play()
                 TweenService:Create(SwitchBg, TweenInfo.new(0.2), {BackgroundColor3=TargetCol}):Play()
-                Config.Callback(Toggled)
+                if Config.Callback then Config.Callback(Toggled) end
             end
             if Toggled then Update() end
+            
             local Btn = Instance.new("TextButton", SwitchBg); Btn.BackgroundTransparency=1; Btn.Size=UDim2.new(1,0,1,0); Btn.Text=""
-            Btn.MouseButton1Click:Connect(function() Toggled = not Toggled; Update() end)
+            if not Locked then
+                Btn.MouseButton1Click:Connect(function() Toggled = not Toggled; Update() end)
+            else
+                Btn.Active = false
+            end
+
         elseif Type == "Keybind" then
             local BindFrame = Instance.new("Frame", Page)
             BindFrame.BackgroundColor3 = Color3.fromRGB(30,30,30); BindFrame.Size=UDim2.new(1,-10,0,35)
@@ -414,6 +497,7 @@ function SoroniceLib:CreateWindow(Config)
             BindBtn.Text = UserInputService:GetStringForKeyCode(Settings.Keybind)
             BindBtn.Font = Enum.Font.SourceSansBold; BindBtn.TextColor3 = Color3.new(1,1,1); BindBtn.TextSize = 14
             Instance.new("UICorner", BindBtn).CornerRadius=UDim.new(0,6)
+            
             BindBtn.MouseButton1Click:Connect(function()
                 BindBtn.Text = "..."
                 local InputConnection
@@ -435,12 +519,15 @@ function SoroniceLib:CreateWindow(Config)
             local Txt = Instance.new("TextLabel", SectionFrame); Txt.BackgroundTransparency=1; Txt.Size=UDim2.new(1,0,1,0); Txt.Position=UDim2.new(0,10,0,0)
             Txt.Text = Config.Text; Txt.TextColor3 = Settings.AccentColor; Txt.TextXAlignment=Enum.TextXAlignment.Left; Txt.Font=Enum.Font.SourceSansBold; Txt.TextSize=18
         
-        -- [LE NOUVEAU COLOR PICKER DE PRÉCISION]
+        -- [COLOR PICKER PRO]
         elseif Type == "ColorPicker" then
             local ColorFrame = Instance.new("Frame", Page)
             ColorFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30); ColorFrame.Size = UDim2.new(1, -10, 0, 160)
             Instance.new("UICorner", ColorFrame).CornerRadius = UDim.new(0, 6)
             
+            -- APPLICATION DU CADENAS
+            local Locked = ApplyLock(ColorFrame, Config)
+
             local Label = Instance.new("TextLabel", ColorFrame); Label.BackgroundTransparency=1; Label.Position=UDim2.new(0,10,0,5); Label.Size=UDim2.new(1,0,0,20)
             Label.Text = Config.Name; Label.TextColor3=Color3.new(1,1,1); Label.TextXAlignment=Enum.TextXAlignment.Left; Label.Font=Enum.Font.SourceSansBold; Label.TextSize=16
 
@@ -448,19 +535,19 @@ function SoroniceLib:CreateWindow(Config)
             local Preview = Instance.new("Frame", ColorFrame); Preview.Position=UDim2.new(0,10,0,30); Preview.Size=UDim2.new(0,30,0,30); Preview.BackgroundColor3=Config.Color or Color3.new(1,1,1)
             Instance.new("UICorner", Preview).CornerRadius = UDim.new(0, 4)
 
-            -- Carré Sat/Val (Grand dégradé)
+            -- Carré Sat/Val
             local SVBox = Instance.new("TextButton", ColorFrame); SVBox.Position=UDim2.new(0, 60, 0, 30); SVBox.Size=UDim2.new(0, 150, 0, 100); SVBox.BackgroundColor3=Color3.new(1,0,0); SVBox.Text=""
             local SVGrad = Instance.new("UIGradient", SVBox); SVGrad.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.new(1,1,1)), ColorSequenceKeypoint.new(1, Color3.new(1,0,0))}
             local SVBlack = Instance.new("ImageLabel", SVBox); SVBlack.Size=UDim2.new(1,0,1,0); SVBlack.Image="rbxassetid://156579757"; SVBlack.BackgroundTransparency=1
             
-            -- Barre Arc-en-Ciel (Hue)
+            -- Barre Arc-en-Ciel
             local HueBar = Instance.new("TextButton", ColorFrame); HueBar.Position=UDim2.new(0, 60, 0, 135); HueBar.Size=UDim2.new(0, 150, 0, 15); HueBar.Text=""
             local HueGrad = Instance.new("UIGradient", HueBar); HueGrad.Color = ColorSequence.new{
                 ColorSequenceKeypoint.new(0, Color3.new(1,0,0)), ColorSequenceKeypoint.new(0.167, Color3.new(1,1,0)), ColorSequenceKeypoint.new(0.333, Color3.new(0,1,0)),
                 ColorSequenceKeypoint.new(0.5, Color3.new(0,1,1)), ColorSequenceKeypoint.new(0.667, Color3.new(0,0,1)), ColorSequenceKeypoint.new(0.833, Color3.new(1,0,1)), ColorSequenceKeypoint.new(1, Color3.new(1,0,0))
             }
 
-            -- Inputs (R, G, B)
+            -- Inputs
             local function CreateInput(Placeholder, XOffset)
                 local Box = Instance.new("TextBox", ColorFrame); Box.BackgroundColor3=Color3.fromRGB(40,40,40); Box.Position=UDim2.new(0, 220, 0, XOffset); Box.Size=UDim2.new(0, 40, 0, 25)
                 Box.Font=Enum.Font.SourceSans; Box.PlaceholderText=Placeholder; Box.Text=""; Box.TextColor3=Color3.new(1,1,1); Box.TextSize=14
@@ -483,34 +570,38 @@ function SoroniceLib:CreateWindow(Config)
                 if Config.Callback then Config.Callback(NewColor) end
             end
 
-            -- Dragging Logic
-            local draggingHue, draggingSV = false, false
-            UserInputService.InputChanged:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-                    if draggingHue then
-                        local percent = math.clamp((input.Position.X - HueBar.AbsolutePosition.X) / HueBar.AbsoluteSize.X, 0, 1)
-                        UpdateColor(percent, nil, nil)
-                    elseif draggingSV then
-                        local s = math.clamp((input.Position.X - SVBox.AbsolutePosition.X) / SVBox.AbsoluteSize.X, 0, 1)
-                        local v = 1 - math.clamp((input.Position.Y - SVBox.AbsolutePosition.Y) / SVBox.AbsoluteSize.Y, 0, 1)
-                        UpdateColor(nil, s, v)
+            -- Dragging Logic (Seulement si pas bloqué)
+            if not Locked then
+                local draggingHue, draggingSV = false, false
+                UserInputService.InputChanged:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+                        if draggingHue then
+                            local percent = math.clamp((input.Position.X - HueBar.AbsolutePosition.X) / HueBar.AbsoluteSize.X, 0, 1)
+                            UpdateColor(percent, nil, nil)
+                        elseif draggingSV then
+                            local s = math.clamp((input.Position.X - SVBox.AbsolutePosition.X) / SVBox.AbsoluteSize.X, 0, 1)
+                            local v = 1 - math.clamp((input.Position.Y - SVBox.AbsolutePosition.Y) / SVBox.AbsoluteSize.Y, 0, 1)
+                            UpdateColor(nil, s, v)
+                        end
                     end
-                end
-            end)
-            
-            -- Activation du Drag
-            HueBar.InputBegan:Connect(function(input) if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then draggingHue=true end end)
-            SVBox.InputBegan:Connect(function(input) if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then draggingSV=true end end)
-            UserInputService.InputEnded:Connect(function(input) if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then draggingHue=false; draggingSV=false end end)
+                end)
+                
+                HueBar.InputBegan:Connect(function(input) if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then draggingHue=true end end)
+                SVBox.InputBegan:Connect(function(input) if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then draggingSV=true end end)
+                UserInputService.InputEnded:Connect(function(input) if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then draggingHue=false; draggingSV=false end end)
 
-            -- Inputs Manuels
-            local function FromRGB()
-                local r, g, b = tonumber(RBox.Text) or 0, tonumber(GBox.Text) or 0, tonumber(BBox.Text) or 0
-                local col = Color3.fromRGB(r, g, b)
-                local h, s, v = col:ToHSV()
-                UpdateColor(h, s, v)
+                local function FromRGB()
+                    local r, g, b = tonumber(RBox.Text) or 0, tonumber(GBox.Text) or 0, tonumber(BBox.Text) or 0
+                    local col = Color3.fromRGB(r, g, b)
+                    local h, s, v = col:ToHSV()
+                    UpdateColor(h, s, v)
+                end
+                RBox.FocusLost:Connect(FromRGB); GBox.FocusLost:Connect(FromRGB); BBox.FocusLost:Connect(FromRGB)
+            else
+                 -- Désactiver les inputs si bloqué
+                 RBox.Editable = false; GBox.Editable = false; BBox.Editable = false; HexBox.Editable = false
+                 SVBox.Active = false; HueBar.Active = false
             end
-            RBox.FocusLost:Connect(FromRGB); GBox.FocusLost:Connect(FromRGB); BBox.FocusLost:Connect(FromRGB)
         end
     end
 
@@ -566,9 +657,13 @@ function SoroniceLib:CreateWindow(Config)
         function TabFunctions:CreateSection(Text) CreateElement(Page, "Section", {Text=Text}) end
         function TabFunctions:CreateLabel(Text) CreateElement(Page, "Label", {Text=Text}) end
         
-        -- [SLIDER CORRIGÉ POUR MOBILE]
+        -- [SLIDER CORRIGÉ POUR MOBILE + CADENAS]
         function TabFunctions:CreateSlider(Config)
              local SliderFrame = Instance.new("Frame", Page); SliderFrame.BackgroundTransparency=1; SliderFrame.Size=UDim2.new(1,-10,0,50)
+             
+             -- APPLICATION DU CADENAS
+             local Locked = ApplyLock(SliderFrame, Config)
+
              local Label = Instance.new("TextLabel", SliderFrame); Label.BackgroundTransparency=1; Label.Position=UDim2.new(0,10,0,0); Label.Size=UDim2.new(1,0,0,20); Label.Text=Config.Name; Label.TextColor3=Color3.new(1,1,1); Label.TextXAlignment=Enum.TextXAlignment.Left; Label.Font=Enum.Font.SourceSans; Label.TextSize=16
              local ValLabel = Instance.new("TextLabel", SliderFrame); ValLabel.BackgroundTransparency=1; ValLabel.Position=UDim2.new(1,-60,0,0); ValLabel.Size=UDim2.new(0,50,0,20); ValLabel.TextColor3=Color3.new(1,1,1); ValLabel.TextXAlignment=Enum.TextXAlignment.Right; ValLabel.Font=Enum.Font.SourceSansBold; ValLabel.TextSize=16
              local Bar = Instance.new("Frame", SliderFrame); Bar.BackgroundColor3=Color3.fromRGB(10,10,10); Bar.Position=UDim2.new(0,10,0,25); Bar.Size=UDim2.new(1,-20,0,10); Instance.new("UICorner", Bar).CornerRadius=UDim.new(1,0)
@@ -576,28 +671,32 @@ function SoroniceLib:CreateWindow(Config)
              local Min, Max = Config.Range[1] or 0, Config.Range[2] or 100
              local Default = Config.CurrentValue or Min; ValLabel.Text = tostring(Default).."%"
              Knob.Position = UDim2.new((Default-Min)/(Max-Min), 0, 0.5, 0)
-             local dragging = false
              
-             -- [CORRECTION MOBILE ICI] : On ajoute 'Touch'
-             Knob.InputBegan:Connect(function(input) 
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
-                    dragging = true 
-                end 
-             end)
-             UserInputService.InputEnded:Connect(function(input) 
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
-                    dragging = false 
-                end 
-             end)
-             UserInputService.InputChanged:Connect(function(input)
-                if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-                    local Percent = math.clamp((input.Position.X - Bar.AbsolutePosition.X)/Bar.AbsoluteSize.X, 0, 1)
-                    Knob.Position = UDim2.new(Percent, 0, 0.5, 0)
-                    local Val = math.floor(Min + (Max-Min)*Percent)
-                    ValLabel.Text = tostring(Val).."%"
-                    Config.Callback(Val)
-                end
-             end)
+             if not Locked then
+                 local dragging = false
+                 -- [CORRECTION MOBILE ICI] : On ajoute 'Touch'
+                 Knob.InputBegan:Connect(function(input) 
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
+                        dragging = true 
+                    end 
+                 end)
+                 UserInputService.InputEnded:Connect(function(input) 
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
+                        dragging = false 
+                    end 
+                 end)
+                 UserInputService.InputChanged:Connect(function(input)
+                    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                        local Percent = math.clamp((input.Position.X - Bar.AbsolutePosition.X)/Bar.AbsoluteSize.X, 0, 1)
+                        Knob.Position = UDim2.new(Percent, 0, 0.5, 0)
+                        local Val = math.floor(Min + (Max-Min)*Percent)
+                        ValLabel.Text = tostring(Val).."%"
+                        if Config.Callback then Config.Callback(Val) end
+                    end
+                 end)
+            else
+                Knob.Active = false -- Désactive le slider si bloqué
+            end
         end
 		return TabFunctions
 	end
