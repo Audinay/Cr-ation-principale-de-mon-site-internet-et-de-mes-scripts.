@@ -1,4 +1,4 @@
--- [[ SORONICE UI LIBRARY - V3 FINALE (SCROLLING + MODE MOBILE) ]] --
+-- [[ SORONICE UI LIBRARY - V3.5 (SCROLLING ACTIF + TAILLE MOBILE + IMAGE MAISON) ]] --
 
 local SoroniceLib = {}
 local UserInputService = game:GetService("UserInputService")
@@ -11,14 +11,12 @@ local StarterGui = game:GetService("StarterGui")
 
 -- --- [ DÉTECTION MOBILE ] ---
 local IsMobile = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
--- Pour tester sur PC, décommente la ligne suivante :
--- IsMobile = true 
 
 -- --- [ CONFIGURATION GLOBALE ] ---
 local Settings = {
-	Keybind = Enum.KeyCode.P, -- Touche par défaut (PC uniquement)
-	ThemeColor = Color3.fromRGB(20, 20, 20), -- Couleur de fond
-	AccentColor = Color3.fromRGB(0, 54, 203) -- Couleur des boutons
+	Keybind = Enum.KeyCode.P,
+	ThemeColor = Color3.fromRGB(20, 20, 20),
+	AccentColor = Color3.fromRGB(0, 54, 203)
 }
 
 -- --- [ SYSTÈME AFK ] ---
@@ -30,7 +28,7 @@ LocalPlayer.Idled:Connect(function()
     end
 end)
 
--- --- [ FONCTION LOGIN (INCHANGÉE) ] ---
+-- --- [ FONCTION LOGIN (COMPLÈTE) ] ---
 local function SpawnLoginSystem(SettingsLogin)
     local Validated = false
     local RealPassword = SettingsLogin.Key or "1234"
@@ -134,7 +132,7 @@ function SoroniceLib:CreateWindow(Config)
 	ScreenGui.Parent = CoreGui
     ScreenGui.ResetOnSpawn = false
 
-    -- [AJOUT MOBILE] : Création du bouton "Maison" pour mobile
+    -- [BOUTON MAISON MOBILE]
     local MobileOpenBtn = nil
     if IsMobile then
         MobileOpenBtn = Instance.new("ImageButton")
@@ -142,13 +140,14 @@ function SoroniceLib:CreateWindow(Config)
         MobileOpenBtn.Parent = ScreenGui
         MobileOpenBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
         MobileOpenBtn.BackgroundTransparency = 0.2
-        MobileOpenBtn.Position = UDim2.new(0.1, 0, 0.1, 0) -- Position par défaut
+        MobileOpenBtn.Position = UDim2.new(0.1, 0, 0.1, 0) 
         MobileOpenBtn.Size = UDim2.new(0, 50, 0, 50)
-        MobileOpenBtn.Image = "rbxassetid://3926307971" -- ID d'une icône "Maison" générique (tu peux changer)
-        MobileOpenBtn.Visible = false -- Caché au départ
+        -- [ID IMAGE MAISON FIXÉ ICI]
+        MobileOpenBtn.Image = Config.MobileImage or "rbxassetid://133601263847208" 
+        MobileOpenBtn.Visible = false 
         Instance.new("UICorner", MobileOpenBtn).CornerRadius = UDim.new(0, 12)
         
-        -- Rendre le bouton mobile déplaçable
+        -- Draggable Mobile Button
         local dragging_mob, dragInput_mob, dragStart_mob, startPos_mob
         MobileOpenBtn.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -181,8 +180,15 @@ function SoroniceLib:CreateWindow(Config)
 	MainFrame.Parent = ScreenGui
 	MainFrame.BackgroundColor3 = Settings.ThemeColor
 	MainFrame.BackgroundTransparency = 0.2
-	MainFrame.Position = UDim2.new(0.5, -250, 0.5, -175)
-	MainFrame.Size = UDim2.new(0, 550, 0, 350)
+    
+    -- [TAILLE ADAPTATIVE] : Si Mobile = Plus petit, Si PC = Normal
+    if IsMobile then
+        MainFrame.Position = UDim2.new(0.5, -200, 0.5, -130) -- Centré pour mobile
+	    MainFrame.Size = UDim2.new(0, 400, 0, 260) -- Taille réduite
+    else
+	    MainFrame.Position = UDim2.new(0.5, -250, 0.5, -175) -- Centré pour PC
+	    MainFrame.Size = UDim2.new(0, 550, 0, 350) -- Taille normale
+    end
 	
 	local MainCorner = Instance.new("UICorner")
 	MainCorner.CornerRadius = UDim.new(0, 10)
@@ -195,7 +201,6 @@ function SoroniceLib:CreateWindow(Config)
 	TopBar.Size = UDim2.new(1, 0, 0, 40)
     TopBar.Position = UDim2.new(0,0,0,0)
 
-    -- Déplacement de la fenêtre principale
 	local dragging, dragInput, dragStart, startPos
 	TopBar.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -232,6 +237,7 @@ function SoroniceLib:CreateWindow(Config)
 	TitleLabel.TextSize = 22
 	TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
+    -- [BOUTON MOINS (ZONE ROUGE)]
 	local MinBtn = Instance.new("TextButton")
 	MinBtn.Name = "Minimize"
 	MinBtn.Parent = TopBar
@@ -243,7 +249,6 @@ function SoroniceLib:CreateWindow(Config)
 	MinBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 	MinBtn.TextSize = 24
     
-    -- [MODIF MOBILE] : Logique de visibilité adaptée
 	local IsHidden = false
     local NotifShown = false 
 
@@ -252,12 +257,10 @@ function SoroniceLib:CreateWindow(Config)
         MainFrame.Visible = not IsHidden
         
         if IsMobile then
-            -- Sur mobile : on affiche/cache le bouton maison
             if MobileOpenBtn then
                 MobileOpenBtn.Visible = IsHidden
             end
         else
-            -- Sur PC : on affiche la notif une seule fois
             if IsHidden and not NotifShown then
                 NotifShown = true
                 game.StarterGui:SetCore("SendNotification", {
@@ -270,13 +273,10 @@ function SoroniceLib:CreateWindow(Config)
     end
 
 	MinBtn.MouseButton1Click:Connect(ToggleVisibility)
-    
-    -- Si on est sur mobile, le bouton maison rouvre le menu
     if IsMobile and MobileOpenBtn then
         MobileOpenBtn.MouseButton1Click:Connect(ToggleVisibility)
     end
 
-    -- Gestion de la touche P (PC uniquement)
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if not IsMobile and not gameProcessed and input.KeyCode == Settings.Keybind then
             ToggleVisibility()
@@ -300,7 +300,7 @@ function SoroniceLib:CreateWindow(Config)
 	Sidebar.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 	Sidebar.BackgroundTransparency = 0.5
 	Sidebar.Position = UDim2.new(0, 10, 0, 50)
-	Sidebar.Size = UDim2.new(0, 60, 0, 290)
+	Sidebar.Size = UDim2.new(0, 60, 0, MainFrame.Size.Y.Offset - 60) -- Sidebar adaptée à la hauteur
 	local SidebarCorner = Instance.new("UICorner")
 	SidebarCorner.CornerRadius = UDim.new(0, 8)
 	SidebarCorner.Parent = Sidebar
@@ -315,8 +315,14 @@ function SoroniceLib:CreateWindow(Config)
 	ContentContainer.Parent = MainFrame
 	ContentContainer.BackgroundTransparency = 1
 	ContentContainer.Position = UDim2.new(0, 80, 0, 50)
-	ContentContainer.Size = UDim2.new(0, 460, 0, 290)
+    -- Contenu adapté à la largeur restante
+    if IsMobile then
+        ContentContainer.Size = UDim2.new(0, 310, 0, 200)
+    else
+	    ContentContainer.Size = UDim2.new(0, 460, 0, 290)
+    end
 
+    -- [BOUTON RÉGLAGES (ZONE BLEUE)]
 	local SettingsBtn = Instance.new("TextButton")
 	SettingsBtn.Name = "Settings_Btn"
 	SettingsBtn.Parent = MainFrame 
@@ -333,14 +339,14 @@ function SoroniceLib:CreateWindow(Config)
 	SettingsIcon.Size = UDim2.new(0, 35, 0, 35)
 	SettingsIcon.Image = "rbxassetid://74182569229556"
 
+    -- [SCROLLING DES RÉGLAGES]
     local SettingsPage = Instance.new("ScrollingFrame")
     SettingsPage.Name = "Settings_Page"
     SettingsPage.Parent = ContentContainer
     SettingsPage.BackgroundTransparency = 1
     SettingsPage.Size = UDim2.new(1, 0, 1, 0)
-    SettingsPage.ScrollBarThickness = 2
+    SettingsPage.ScrollBarThickness = 4
     SettingsPage.Visible = false 
-    -- [AJOUT SCROLLING] : Canvas automatique pour les réglages
     SettingsPage.AutomaticCanvasSize = Enum.AutomaticSize.Y
     SettingsPage.CanvasSize = UDim2.new(0,0,0,0)
 
@@ -425,7 +431,6 @@ function SoroniceLib:CreateWindow(Config)
         end
     })
     
-    -- [MODIF MOBILE] : On n'affiche pas le changement de touche sur mobile
     if not IsMobile then
         CreateElement(SettingsPage, "Keybind", {
             Name = "Touche pour Cacher/Montrer",
@@ -444,11 +449,10 @@ function SoroniceLib:CreateWindow(Config)
 			TabBtn.Text = string.sub(TabName, 1, 1); TabBtn.TextColor3 = Color3.new(0.8,0.8,0.8); TabBtn.TextSize=20; TabBtn.Font=Enum.Font.SourceSansBold
 		end
 
-        -- [AJOUT SCROLLING] : On change Frame en ScrollingFrame ici aussi
+        -- [SCROLLING DES PAGES] : Activation du défilement ici
 		local Page = Instance.new("ScrollingFrame", ContentContainer)
-		Page.BackgroundTransparency=1; Page.Size=UDim2.new(1,0,1,0); Page.ScrollBarThickness=2; Page.Visible=FirstTab
-        -- Activation du canvas automatique pour que ça scroll si ça déborde
-        Page.AutomaticCanvasSize = Enum.AutomaticSize.Y
+		Page.BackgroundTransparency=1; Page.Size=UDim2.new(1,0,1,0); Page.ScrollBarThickness=4; Page.Visible=FirstTab
+        Page.AutomaticCanvasSize = Enum.AutomaticSize.Y -- C'est ça qui fait que ça s'agrandit tout seul
         Page.CanvasSize = UDim2.new(0,0,0,0)
 
         local PageLayout = Instance.new("UIListLayout", Page)
