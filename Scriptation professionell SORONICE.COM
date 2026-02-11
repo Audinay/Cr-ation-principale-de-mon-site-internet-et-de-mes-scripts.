@@ -1,4 +1,4 @@
--- [[ SORONICE UI LIBRARY - V3.5 (SCROLLING ACTIF + TAILLE MOBILE + IMAGE MAISON) ]] --
+-- [[ SORONICE UI LIBRARY - V3.6 (SCROLLING FIXÉ + LIMITES BLANCHES RESPECTÉES) ]] --
 
 local SoroniceLib = {}
 local UserInputService = game:GetService("UserInputService")
@@ -28,7 +28,7 @@ LocalPlayer.Idled:Connect(function()
     end
 end)
 
--- --- [ FONCTION LOGIN (COMPLÈTE) ] ---
+-- --- [ FONCTION LOGIN ] ---
 local function SpawnLoginSystem(SettingsLogin)
     local Validated = false
     local RealPassword = SettingsLogin.Key or "1234"
@@ -142,12 +142,10 @@ function SoroniceLib:CreateWindow(Config)
         MobileOpenBtn.BackgroundTransparency = 0.2
         MobileOpenBtn.Position = UDim2.new(0.1, 0, 0.1, 0) 
         MobileOpenBtn.Size = UDim2.new(0, 50, 0, 50)
-        -- [ID IMAGE MAISON FIXÉ ICI]
-        MobileOpenBtn.Image = Config.MobileImage or "rbxassetid://133601263847208" 
+        MobileOpenBtn.Image = Config.MobileImage or "rbxassetid://133601263847208" -- Ton image maison
         MobileOpenBtn.Visible = false 
         Instance.new("UICorner", MobileOpenBtn).CornerRadius = UDim.new(0, 12)
         
-        -- Draggable Mobile Button
         local dragging_mob, dragInput_mob, dragStart_mob, startPos_mob
         MobileOpenBtn.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -181,19 +179,20 @@ function SoroniceLib:CreateWindow(Config)
 	MainFrame.BackgroundColor3 = Settings.ThemeColor
 	MainFrame.BackgroundTransparency = 0.2
     
-    -- [TAILLE ADAPTATIVE] : Si Mobile = Plus petit, Si PC = Normal
+    -- [TAILLE ADAPTATIVE]
     if IsMobile then
-        MainFrame.Position = UDim2.new(0.5, -200, 0.5, -130) -- Centré pour mobile
-	    MainFrame.Size = UDim2.new(0, 400, 0, 260) -- Taille réduite
+        MainFrame.Position = UDim2.new(0.5, -200, 0.5, -130)
+	    MainFrame.Size = UDim2.new(0, 400, 0, 260)
     else
-	    MainFrame.Position = UDim2.new(0.5, -250, 0.5, -175) -- Centré pour PC
-	    MainFrame.Size = UDim2.new(0, 550, 0, 350) -- Taille normale
+	    MainFrame.Position = UDim2.new(0.5, -250, 0.5, -175)
+	    MainFrame.Size = UDim2.new(0, 550, 0, 350)
     end
 	
 	local MainCorner = Instance.new("UICorner")
 	MainCorner.CornerRadius = UDim.new(0, 10)
 	MainCorner.Parent = MainFrame
 
+    -- Barre de déplacement
 	local TopBar = Instance.new("Frame")
 	TopBar.Name = "TopBar"
 	TopBar.Parent = MainFrame
@@ -237,7 +236,7 @@ function SoroniceLib:CreateWindow(Config)
 	TitleLabel.TextSize = 22
 	TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-    -- [BOUTON MOINS (ZONE ROUGE)]
+    -- [BOUTON MOINS]
 	local MinBtn = Instance.new("TextButton")
 	MinBtn.Name = "Minimize"
 	MinBtn.Parent = TopBar
@@ -300,12 +299,22 @@ function SoroniceLib:CreateWindow(Config)
 	Sidebar.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 	Sidebar.BackgroundTransparency = 0.5
 	Sidebar.Position = UDim2.new(0, 10, 0, 50)
-	Sidebar.Size = UDim2.new(0, 60, 0, MainFrame.Size.Y.Offset - 60) -- Sidebar adaptée à la hauteur
+	Sidebar.Size = UDim2.new(0, 60, 0, MainFrame.Size.Y.Offset - 60)
+    Sidebar.ClipsDescendants = true -- Coupe ce qui dépasse
 	local SidebarCorner = Instance.new("UICorner")
 	SidebarCorner.CornerRadius = UDim.new(0, 8)
 	SidebarCorner.Parent = Sidebar
+    
+    -- [SIDEBAR SCROLLING] : Pour éviter que les onglets dépassent en bas
+    local SidebarScroll = Instance.new("ScrollingFrame")
+    SidebarScroll.Parent = Sidebar
+    SidebarScroll.BackgroundTransparency = 1
+    SidebarScroll.Size = UDim2.new(1, 0, 1, 0)
+    SidebarScroll.ScrollBarThickness = 0 -- Invisible mais scrollable
+    SidebarScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    
 	local SidebarLayout = Instance.new("UIListLayout")
-	SidebarLayout.Parent = Sidebar
+	SidebarLayout.Parent = SidebarScroll
 	SidebarLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	SidebarLayout.Padding = UDim.new(0, 10)
 	SidebarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
@@ -315,14 +324,14 @@ function SoroniceLib:CreateWindow(Config)
 	ContentContainer.Parent = MainFrame
 	ContentContainer.BackgroundTransparency = 1
 	ContentContainer.Position = UDim2.new(0, 80, 0, 50)
-    -- Contenu adapté à la largeur restante
     if IsMobile then
         ContentContainer.Size = UDim2.new(0, 310, 0, 200)
     else
 	    ContentContainer.Size = UDim2.new(0, 460, 0, 290)
     end
+    ContentContainer.ClipsDescendants = true -- Coupe ce qui dépasse (Limite blanche)
 
-    -- [BOUTON RÉGLAGES (ZONE BLEUE)]
+    -- [BOUTON RÉGLAGES]
 	local SettingsBtn = Instance.new("TextButton")
 	SettingsBtn.Name = "Settings_Btn"
 	SettingsBtn.Parent = MainFrame 
@@ -331,6 +340,7 @@ function SoroniceLib:CreateWindow(Config)
     SettingsBtn.Position = UDim2.new(0, 18, 1, -55)
 	SettingsBtn.Size = UDim2.new(0, 45, 0, 45)
 	SettingsBtn.Text = ""
+    SettingsBtn.ZIndex = 2 -- Au dessus de la sidebar
     Instance.new("UICorner", SettingsBtn).CornerRadius = UDim.new(0, 8)
 	local SettingsIcon = Instance.new("ImageLabel")
 	SettingsIcon.Parent = SettingsBtn
@@ -358,7 +368,8 @@ function SoroniceLib:CreateWindow(Config)
     SettingsBtn.MouseButton1Click:Connect(function()
         for _, v in pairs(ContentContainer:GetChildren()) do v.Visible = false end
         SettingsPage.Visible = true
-        for _, btn in pairs(Sidebar:GetChildren()) do
+        -- Reset couleurs boutons
+        for _, btn in pairs(SidebarScroll:GetChildren()) do
             if btn:IsA("TextButton") then TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0,0,0)}):Play() end
         end
         TweenService:Create(SettingsBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(40,40,40)}):Play()
@@ -439,7 +450,7 @@ function SoroniceLib:CreateWindow(Config)
     end
 
 	function WindowFunctions:CreateTab(TabName, TabImageId)
-		local TabBtn = Instance.new("TextButton", Sidebar)
+		local TabBtn = Instance.new("TextButton", SidebarScroll) -- Ajouté au SidebarScroll
 		TabBtn.BackgroundColor3 = Color3.new(0,0,0); TabBtn.BackgroundTransparency=0.5; TabBtn.Size=UDim2.new(0,45,0,45); TabBtn.Text=""
         Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0,8)
 		if TabImageId and TabImageId ~= 0 then
@@ -449,11 +460,12 @@ function SoroniceLib:CreateWindow(Config)
 			TabBtn.Text = string.sub(TabName, 1, 1); TabBtn.TextColor3 = Color3.new(0.8,0.8,0.8); TabBtn.TextSize=20; TabBtn.Font=Enum.Font.SourceSansBold
 		end
 
-        -- [SCROLLING DES PAGES] : Activation du défilement ici
+        -- [PAGE SCROLLING]
 		local Page = Instance.new("ScrollingFrame", ContentContainer)
-		Page.BackgroundTransparency=1; Page.Size=UDim2.new(1,0,1,0); Page.ScrollBarThickness=4; Page.Visible=FirstTab
-        Page.AutomaticCanvasSize = Enum.AutomaticSize.Y -- C'est ça qui fait que ça s'agrandit tout seul
+		Page.BackgroundTransparency=1; Page.Size=UDim2.new(1,0,1,0); Page.ScrollBarThickness=6; Page.Visible=FirstTab
+        Page.AutomaticCanvasSize = Enum.AutomaticSize.Y
         Page.CanvasSize = UDim2.new(0,0,0,0)
+        Page.VerticalScrollBarInset = Enum.ScrollBarInset.None
 
         local PageLayout = Instance.new("UIListLayout", Page)
         PageLayout.Padding = UDim.new(0,8)
