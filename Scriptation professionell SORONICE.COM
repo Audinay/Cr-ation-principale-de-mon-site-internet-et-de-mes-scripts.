@@ -1,4 +1,4 @@
--- [[ SORONICE UI LIBRARY - V5.3 (VITESSE LIBRE + ANIMATION MINIMIZE) ]] --
+-- [[ SORONICE UI LIBRARY - V5.4 (TAB SWITCH FIX + ANIMATIONS + SAFE STOP) ]] --
 
 local SoroniceLib = {}
 local UserInputService = game:GetService("UserInputService")
@@ -21,8 +21,8 @@ local Settings = {
 	AccentColor = Color3.fromRGB(0, 54, 203)
 }
 
--- --- [ LISTE POUR L'ARRÊT D'URGENCE ] ---
-local ActiveToggles = {} -- On ne stocke que les toggles pour couper les boucles
+-- --- [ TABLEAU DES ÉLÉMENTS ACTIFS (POUR STOPPER A LA FERMETURE) ] ---
+local ActiveToggles = {} 
 
 -- --- [ SYSTÈME AFK ] ---
 local antiAfkActive = false
@@ -240,7 +240,6 @@ function SoroniceLib:CreateWindow(Config)
         TargetSize = UDim2.new(0, 550, 0, 350)
     end
     
-    -- Ouverture Initiale
     MainFrame.Size = UDim2.new(0, 0, 0, 0)
     MainFrame.ClipsDescendants = true 
     TweenService:Create(MainFrame, TweenInfo.new(0.7, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = TargetSize}):Play()
@@ -292,7 +291,7 @@ function SoroniceLib:CreateWindow(Config)
 	TitleLabel.TextSize = 22
 	TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-    -- [ANIMATION POUR LE BOUTON MINIMIZE (-)]
+    -- [BOUTON MOINS AVEC ANIMATION]
 	local MinBtn = Instance.new("TextButton")
 	MinBtn.Name = "Minimize"
 	MinBtn.Parent = TopBar
@@ -305,24 +304,22 @@ function SoroniceLib:CreateWindow(Config)
 	MinBtn.TextSize = 24
     
 	local IsHidden = false
-    local isAnimating = false -- Sécurité pour ne pas spammer
+    local isAnimating = false
 
     local function ToggleVisibility()
         if isAnimating then return end
         isAnimating = true
-        
         IsHidden = not IsHidden
         
         if IsHidden then
-            -- Animation Rétrécissement
+            -- ZOOM OUT (Rétrécir)
             local closeT = TweenService:Create(MainFrame, TweenInfo.new(0.7, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(0,0,0,0)})
             closeT:Play()
             closeT.Completed:Wait()
             MainFrame.Visible = false
-            
             if IsMobile and MobileOpenBtn then MobileOpenBtn.Visible = true end
         else
-            -- Animation Agrandissement
+            -- ZOOM IN (Agrandir)
             if IsMobile and MobileOpenBtn then MobileOpenBtn.Visible = false end
             MainFrame.Visible = true
             local openT = TweenService:Create(MainFrame, TweenInfo.new(0.7, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = TargetSize})
@@ -338,7 +335,7 @@ function SoroniceLib:CreateWindow(Config)
         if not IsMobile and not gameProcessed and input.KeyCode == Settings.Keybind then ToggleVisibility() end
     end)
 
-    -- [FERMETURE AVEC ARRÊT DES BOUCLES UNIQUEMENT]
+    -- [FERMETURE CROIX AVEC DÉSACTIVATION DES SCRIPTS]
 	local CloseBtn = Instance.new("TextButton")
 	CloseBtn.Name = "Close"
 	CloseBtn.Parent = TopBar
@@ -351,17 +348,15 @@ function SoroniceLib:CreateWindow(Config)
 	CloseBtn.TextSize = 20
 	CloseBtn.MouseButton1Click:Connect(function() 
         
-        -- 1. DÉSACTIVATION UNIQUEMENT DES TOGGLES (STOPPER LES LOOPS)
-        -- Je ne touche PAS aux Sliders pour ne pas reset la vitesse à 16.
+        -- DÉSACTIVATION DES TOGGLES (STOPPER LES LOOPS)
+        -- On envoie 'false' au callback. À TOI de gérer le reset de vitesse dans ton script avec 'else'.
         for _, ToggleData in pairs(ActiveToggles) do
             if ToggleData.Callback then
-                -- On appelle le callback avec FALSE. 
-                -- Si ton script de vitesse en boucle est dans un Toggle, ça l'arrêtera.
                 ToggleData.Callback(false) 
             end
         end
         
-        -- 2. ANIMATION DE FERMETURE (Vers le centre)
+        -- ANIMATION DE FERMETURE
         local CloseTween = TweenService:Create(MainFrame, TweenInfo.new(0.7, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Size = UDim2.new(0,0,0,0)})
         CloseTween:Play()
         CloseTween.Completed:Wait() 
@@ -631,8 +626,13 @@ function SoroniceLib:CreateWindow(Config)
 			TabBtn.Text = string.sub(TabName, 1, 1); TabBtn.TextColor3 = Color3.new(0.8,0.8,0.8); TabBtn.TextSize=20; TabBtn.Font=Enum.Font.SourceSansBold
 		end
 
+        -- [APPLY LOCK ON TAB BUTTON]
+        local IsButtonLocked = false
         if LockConfig and LockConfig.Locked then
-             if LockConfig.LockMode == "Frame" then else ApplyLock(TabBtn, LockConfig) end
+             -- Si ce n'est PAS le mode Frame, alors c'est le mode Button, donc on bloque le bouton
+             if LockConfig.LockMode ~= "Frame" then 
+                 IsButtonLocked = ApplyLock(TabBtn, LockConfig) 
+             end
         end
 
 		local Page = Instance.new("ScrollingFrame", ContentContainer)
@@ -645,17 +645,19 @@ function SoroniceLib:CreateWindow(Config)
         PageLayout.Padding = UDim.new(0,8)
         PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
-        if LockConfig and LockConfig.Locked and LockConfig.LockMode == "Frame" then ApplyLock(Page, LockConfig) end
+        -- [APPLY LOCK ON PAGE CONTENT]
+        if LockConfig and LockConfig.Locked and LockConfig.LockMode == "Frame" then 
+            ApplyLock(Page, LockConfig) 
+        end
 
 		TabBtn.MouseButton1Click:Connect(function()
-            local Allowed, Reason = CheckAccess(LockConfig)
-            if Allowed or (LockConfig and LockConfig.LockMode == "Frame") then
-    			for _,v in pairs(ContentContainer:GetChildren()) do v.Visible=false end
-    			Page.Visible=true
-                TweenService:Create(SettingsBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0,0,0)}):Play()
-            else
-                TriggerLockAction(Reason, LockConfig and LockConfig.GamePassID)
-            end
+            -- SI LE BOUTON EST BLOQUÉ, ON NE FAIT RIEN (LE CADENAS S'EN OCCUPE)
+            if IsButtonLocked then return end
+
+            -- SINON, ON CHANGE DE PAGE NORMALEMENT
+			for _,v in pairs(ContentContainer:GetChildren()) do v.Visible=false end
+			Page.Visible=true
+            TweenService:Create(SettingsBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0,0,0)}):Play()
 		end)
 		FirstTab = false
 
