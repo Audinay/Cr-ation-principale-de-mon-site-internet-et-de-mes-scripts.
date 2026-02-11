@@ -1,4 +1,4 @@
--- [[ SORONICE UI LIBRARY - V4.3 (FINALE : CADENAS, SIDEBAR FIX, COLOR PICKER PRO) ]] --
+-- [[ SORONICE UI LIBRARY - V4.5 (ANTI-EXPLOIT LOCK + TON ID) ]] --
 
 local SoroniceLib = {}
 local UserInputService = game:GetService("UserInputService")
@@ -133,59 +133,64 @@ function SoroniceLib:CreateWindow(Config)
 	ScreenGui.Parent = CoreGui
     ScreenGui.ResetOnSpawn = false
 
-    -- [APPLY LOCK FUNCTION]
-    local function ApplyLock(TargetFrame, ElementConfig)
-        local IsLocked = ElementConfig.Locked or false
-        local LockReason = nil 
-
-        -- Check Ban
+    -- [FONCTIONS DE SÉCURITÉ]
+    local function CheckAccess(ElementConfig)
+        if not ElementConfig then return true, nil end
+        
+        -- 1. Vérif Ban
         if ElementConfig.BannedUsers and type(ElementConfig.BannedUsers) == "table" then
             for _, bannedId in pairs(ElementConfig.BannedUsers) do
                 if LocalPlayer.UserId == bannedId then
-                    IsLocked = true
-                    LockReason = "Banned"
-                    break
+                    return false, "Banned"
                 end
             end
         end
 
-        -- Check Gamepass
-        if not LockReason and ElementConfig.GamePassID then
-            IsLocked = true 
-            LockReason = "Gamepass"
+        -- 2. Vérif Gamepass (Uniquement si Locked=true est activé explicitement)
+        if ElementConfig.Locked == true and ElementConfig.GamePassID then
+            -- Note: On ne peut pas vérifier l'achat côté client de façon 100% sûre sans serveur,
+            -- mais on force l'achat ici.
+            return false, "Gamepass"
         end
+        
+        return true, nil
+    end
 
-        if IsLocked then
+    local function TriggerLockAction(Reason, GamePassID)
+        if Reason == "Gamepass" and GamePassID then
+            MarketplaceService:PromptGamePassPurchase(LocalPlayer, GamePassID)
+        elseif Reason == "Banned" then
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "Accès Refusé",
+                Text = "Vous n'avez pas la permission d'utiliser cette fonctionnalité.",
+                Duration = 3
+            })
+        end
+    end
+
+    local function ApplyLockVisuals(TargetFrame, ElementConfig)
+        local Allowed, Reason = CheckAccess(ElementConfig)
+        
+        if not Allowed then
             TargetFrame.ClipsDescendants = true 
-
             local LockOverlay = Instance.new("ImageButton")
             LockOverlay.Name = "LockOverlay"
             LockOverlay.Parent = TargetFrame
             LockOverlay.BackgroundTransparency = 1
             LockOverlay.Size = UDim2.new(1, 0, 1, 0)
             LockOverlay.Position = UDim2.new(0, 0, 0, 0)
-            LockOverlay.ZIndex = 20 
+            LockOverlay.ZIndex = 50 
             
-            -- [ID CADENAS] : J'utilise un ID standard pour être sûr que tu le voies.
-            -- Si tu veux ton ID perso, remplace "3926305904" par "139868914964686"
-            LockOverlay.Image = "rbxassetid://3926305904" 
-            LockOverlay.ImageTransparency = 0.2 -- Visible pour test
-            LockOverlay.ImageColor3 = Color3.new(1, 0, 0) -- Rouge pour bien le voir
+            -- [TON ID D'IMAGE ICI]
+            LockOverlay.Image = "rbxassetid://139868914964686" 
+            LockOverlay.ImageTransparency = 0.53 
             
             LockOverlay.MouseButton1Click:Connect(function()
-                if LockReason == "Gamepass" and ElementConfig.GamePassID then
-                    MarketplaceService:PromptGamePassPurchase(LocalPlayer, ElementConfig.GamePassID)
-                elseif LockReason == "Banned" then
-                    game.StarterGui:SetCore("SendNotification", {
-                        Title = "Accès Refusé",
-                        Text = "Vous n'avez pas la permission d'utiliser cette fonctionnalité.",
-                        Duration = 3
-                    })
-                end
+                TriggerLockAction(Reason, ElementConfig.GamePassID)
             end)
-            return true 
+            return true
         end
-        return false 
+        return false
     end
 
 
@@ -354,13 +359,12 @@ function SoroniceLib:CreateWindow(Config)
 	Sidebar.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 	Sidebar.BackgroundTransparency = 0.5
 	Sidebar.Position = UDim2.new(0, 10, 0, 50)
-	Sidebar.Size = UDim2.new(0, 60, 1, -60) -- [CORRECTION SIDEBAR]
+	Sidebar.Size = UDim2.new(0, 60, 1, -60) 
     Sidebar.ClipsDescendants = true 
 	local SidebarCorner = Instance.new("UICorner")
 	SidebarCorner.CornerRadius = UDim.new(0, 8)
 	SidebarCorner.Parent = Sidebar
     
-    -- [SIDEBAR SCROLLING]
     local SidebarScroll = Instance.new("ScrollingFrame")
     SidebarScroll.Parent = Sidebar
     SidebarScroll.BackgroundTransparency = 1
@@ -442,17 +446,21 @@ function SoroniceLib:CreateWindow(Config)
 			local Btn = Instance.new("TextButton", BtnFrame)
 			Btn.BackgroundTransparency=1; Btn.Size=UDim2.new(1,0,1,0); Btn.Font=Enum.Font.SourceSans; Btn.Text="  "..Config.Name; Btn.TextColor3=Color3.new(1,1,1); Btn.TextSize=16; Btn.TextXAlignment=Enum.TextXAlignment.Left
 			
-            local Locked = ApplyLock(BtnFrame, Config)
+            -- [SÉCURITÉ ANTI-EXPLOIT]
+            ApplyLockVisuals(BtnFrame, Config) -- Affiche juste le cadenas
 
-            if not Locked then 
-    			Btn.MouseButton1Click:Connect(function() 
+            Btn.MouseButton1Click:Connect(function()
+                -- VÉRIFICATION SECONDAIRE AU MOMENT DU CLIC
+                local Allowed, Reason = CheckAccess(Config)
+                if Allowed then
                     TweenService:Create(BtnFrame, TweenInfo.new(0.1), {BackgroundColor3=Color3.fromRGB(50,50,50)}):Play(); wait(0.1)
                     TweenService:Create(BtnFrame, TweenInfo.new(0.1), {BackgroundColor3=Color3.fromRGB(30,30,30)}):Play()
                     if Config.Callback then Config.Callback() end 
-                end)
-            else
-                Btn.Active = false 
-            end
+                else
+                    -- Si le cadenas est invisible mais qu'il n'a pas le droit, ça déclenche l'achat !
+                    TriggerLockAction(Reason, Config.GamePassID)
+                end
+            end)
 
         elseif Type == "Toggle" then
             local ToggleFrame = Instance.new("Frame", Page); ToggleFrame.BackgroundTransparency=1; ToggleFrame.Size=UDim2.new(1,-10,0,35)
@@ -462,7 +470,7 @@ function SoroniceLib:CreateWindow(Config)
             local Knob = Instance.new("Frame", SwitchBg); Knob.BackgroundColor3=Color3.new(1,1,1); Knob.Position=UDim2.new(0,2,0.5,-10); Knob.Size=UDim2.new(0,20,0,20)
             Instance.new("UICorner", Knob).CornerRadius=UDim.new(1,0)
             
-            local Locked = ApplyLock(ToggleFrame, Config)
+            ApplyLockVisuals(ToggleFrame, Config)
 
             local Toggled = Config.CurrentValue or false
             local function Update()
@@ -475,11 +483,15 @@ function SoroniceLib:CreateWindow(Config)
             if Toggled then Update() end
             
             local Btn = Instance.new("TextButton", SwitchBg); Btn.BackgroundTransparency=1; Btn.Size=UDim2.new(1,0,1,0); Btn.Text=""
-            if not Locked then
-                Btn.MouseButton1Click:Connect(function() Toggled = not Toggled; Update() end)
-            else
-                Btn.Active = false
-            end
+            
+            Btn.MouseButton1Click:Connect(function() 
+                local Allowed, Reason = CheckAccess(Config)
+                if Allowed then
+                    Toggled = not Toggled; Update()
+                else
+                    TriggerLockAction(Reason, Config.GamePassID)
+                end
+            end)
 
         elseif Type == "Keybind" then
             local BindFrame = Instance.new("Frame", Page)
@@ -518,7 +530,7 @@ function SoroniceLib:CreateWindow(Config)
             ColorFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30); ColorFrame.Size = UDim2.new(1, -10, 0, 160)
             Instance.new("UICorner", ColorFrame).CornerRadius = UDim.new(0, 6)
             
-            local Locked = ApplyLock(ColorFrame, Config)
+            ApplyLockVisuals(ColorFrame, Config)
 
             local Label = Instance.new("TextLabel", ColorFrame); Label.BackgroundTransparency=1; Label.Position=UDim2.new(0,10,0,5); Label.Size=UDim2.new(1,0,0,20)
             Label.Text = Config.Name; Label.TextColor3=Color3.new(1,1,1); Label.TextXAlignment=Enum.TextXAlignment.Left; Label.Font=Enum.Font.SourceSansBold; Label.TextSize=16
@@ -557,7 +569,12 @@ function SoroniceLib:CreateWindow(Config)
                 if Config.Callback then Config.Callback(NewColor) end
             end
 
-            if not Locked then
+            -- Si bloqué, on désactive simplement les inputs pour éviter les erreurs
+            local Allowed, _ = CheckAccess(Config)
+            if not Allowed then
+                 RBox.Editable = false; GBox.Editable = false; BBox.Editable = false; HexBox.Editable = false
+                 SVBox.Active = false; HueBar.Active = false
+            else
                 local draggingHue, draggingSV = false, false
                 UserInputService.InputChanged:Connect(function(input)
                     if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
@@ -583,9 +600,6 @@ function SoroniceLib:CreateWindow(Config)
                     UpdateColor(h, s, v)
                 end
                 RBox.FocusLost:Connect(FromRGB); GBox.FocusLost:Connect(FromRGB); BBox.FocusLost:Connect(FromRGB)
-            else
-                 RBox.Editable = false; GBox.Editable = false; BBox.Editable = false; HexBox.Editable = false
-                 SVBox.Active = false; HueBar.Active = false
             end
         end
     end
@@ -606,8 +620,8 @@ function SoroniceLib:CreateWindow(Config)
         })
     end
 
-	function WindowFunctions:CreateTab(TabName, TabImageId)
-		local TabBtn = Instance.new("TextButton", SidebarScroll) -- Ajouté au SidebarScroll
+	function WindowFunctions:CreateTab(TabName, TabImageId, LockConfig) 
+		local TabBtn = Instance.new("TextButton", SidebarScroll) 
 		TabBtn.BackgroundColor3 = Color3.new(0,0,0); TabBtn.BackgroundTransparency=0.5; TabBtn.Size=UDim2.new(0,45,0,45); TabBtn.Text=""
         Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0,8)
 		if TabImageId and TabImageId ~= 0 then
@@ -617,10 +631,15 @@ function SoroniceLib:CreateWindow(Config)
 			TabBtn.Text = string.sub(TabName, 1, 1); TabBtn.TextColor3 = Color3.new(0.8,0.8,0.8); TabBtn.TextSize=20; TabBtn.Font=Enum.Font.SourceSansBold
 		end
 
-        -- [SCROLLING DES PAGES]
+        -- [APPLY LOCK ON TAB]
+        local IsTabLocked = false
+        if LockConfig then
+             ApplyLockVisuals(TabBtn, LockConfig)
+        end
+
 		local Page = Instance.new("ScrollingFrame", ContentContainer)
 		Page.BackgroundTransparency=1; Page.Size=UDim2.new(1,0,1,0); Page.ScrollBarThickness=6; Page.Visible=FirstTab
-        Page.AutomaticCanvasSize = Enum.AutomaticSize.Y -- C'est ça qui fait que ça s'agrandit tout seul
+        Page.AutomaticCanvasSize = Enum.AutomaticSize.Y 
         Page.CanvasSize = UDim2.new(0,0,0,0)
         Page.VerticalScrollBarInset = Enum.ScrollBarInset.None
 
@@ -628,10 +647,16 @@ function SoroniceLib:CreateWindow(Config)
         PageLayout.Padding = UDim.new(0,8)
         PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
+        -- Clic sur l'onglet (Sécurisé)
 		TabBtn.MouseButton1Click:Connect(function()
-			for _,v in pairs(ContentContainer:GetChildren()) do v.Visible=false end
-			Page.Visible=true
-            TweenService:Create(SettingsBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0,0,0)}):Play()
+            local Allowed, Reason = CheckAccess(LockConfig)
+            if Allowed then
+    			for _,v in pairs(ContentContainer:GetChildren()) do v.Visible=false end
+    			Page.Visible=true
+                TweenService:Create(SettingsBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0,0,0)}):Play()
+            else
+                TriggerLockAction(Reason, LockConfig and LockConfig.GamePassID)
+            end
 		end)
 		FirstTab = false
 
@@ -646,7 +671,7 @@ function SoroniceLib:CreateWindow(Config)
         function TabFunctions:CreateSlider(Config)
              local SliderFrame = Instance.new("Frame", Page); SliderFrame.BackgroundTransparency=1; SliderFrame.Size=UDim2.new(1,-10,0,50)
              
-             local Locked = ApplyLock(SliderFrame, Config)
+             ApplyLockVisuals(SliderFrame, Config)
 
              local Label = Instance.new("TextLabel", SliderFrame); Label.BackgroundTransparency=1; Label.Position=UDim2.new(0,10,0,0); Label.Size=UDim2.new(1,0,0,20); Label.Text=Config.Name; Label.TextColor3=Color3.new(1,1,1); Label.TextXAlignment=Enum.TextXAlignment.Left; Label.Font=Enum.Font.SourceSans; Label.TextSize=16
              local ValLabel = Instance.new("TextLabel", SliderFrame); ValLabel.BackgroundTransparency=1; ValLabel.Position=UDim2.new(1,-60,0,0); ValLabel.Size=UDim2.new(0,50,0,20); ValLabel.TextColor3=Color3.new(1,1,1); ValLabel.TextXAlignment=Enum.TextXAlignment.Right; ValLabel.Font=Enum.Font.SourceSansBold; ValLabel.TextSize=16
@@ -656,30 +681,48 @@ function SoroniceLib:CreateWindow(Config)
              local Default = Config.CurrentValue or Min; ValLabel.Text = tostring(Default).."%"
              Knob.Position = UDim2.new((Default-Min)/(Max-Min), 0, 0.5, 0)
              
-             if not Locked then
-                 local dragging = false
-                 Knob.InputBegan:Connect(function(input) 
-                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
+             local dragging = false
+             
+             -- Logique de Drag (Sécurisée)
+             local function UpdateSlider(input)
+                 local Allowed, Reason = CheckAccess(Config)
+                 if not Allowed then 
+                     dragging = false
+                     -- On pourrait trigger l'action ici, mais c'est spammy sur un slider.
+                     -- Mieux vaut le faire au clic initial.
+                     return 
+                 end
+
+                 local Percent = math.clamp((input.Position.X - Bar.AbsolutePosition.X)/Bar.AbsoluteSize.X, 0, 1)
+                 Knob.Position = UDim2.new(Percent, 0, 0.5, 0)
+                 local Val = math.floor(Min + (Max-Min)*Percent)
+                 ValLabel.Text = tostring(Val).."%"
+                 if Config.Callback then Config.Callback(Val) end
+             end
+
+             Knob.InputBegan:Connect(function(input) 
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
+                    -- VÉRIF AU DÉBUT DU CLIC
+                    local Allowed, Reason = CheckAccess(Config)
+                    if Allowed then
                         dragging = true 
-                    end 
-                 end)
-                 UserInputService.InputEnded:Connect(function(input) 
-                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
-                        dragging = false 
-                    end 
-                 end)
-                 UserInputService.InputChanged:Connect(function(input)
-                    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-                        local Percent = math.clamp((input.Position.X - Bar.AbsolutePosition.X)/Bar.AbsoluteSize.X, 0, 1)
-                        Knob.Position = UDim2.new(Percent, 0, 0.5, 0)
-                        local Val = math.floor(Min + (Max-Min)*Percent)
-                        ValLabel.Text = tostring(Val).."%"
-                        if Config.Callback then Config.Callback(Val) end
+                    else
+                        TriggerLockAction(Reason, Config.GamePassID)
                     end
-                 end)
-            else
-                Knob.Active = false 
-            end
+                end 
+             end)
+             
+             UserInputService.InputEnded:Connect(function(input) 
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
+                    dragging = false 
+                end 
+             end)
+             
+             UserInputService.InputChanged:Connect(function(input)
+                if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                    UpdateSlider(input)
+                end
+             end)
         end
 		return TabFunctions
 	end
