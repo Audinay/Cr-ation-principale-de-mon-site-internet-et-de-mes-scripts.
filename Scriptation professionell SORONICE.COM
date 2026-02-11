@@ -44,7 +44,8 @@ local function SpawnLoginSystem(SettingsLogin)
     LoginGui.Parent = CoreGui
     LoginGui.ResetOnSpawn = false
     
-    local BlurEffect = Instance.new("BlurEffect", game.Lighting)
+    local BlurEffect = Instance.new("BlurEffect")
+    BlurEffect.Parent = game.Lighting
     BlurEffect.Size = 24
     
     -- Image de fond
@@ -57,7 +58,8 @@ local function SpawnLoginSystem(SettingsLogin)
     BackgroundImage.BackgroundTransparency = 1
     
     -- Titre
-    local TitleText = Instance.new("TextLabel", BackgroundImage)
+    local TitleText = Instance.new("TextLabel")
+    TitleText.Parent = BackgroundImage
     TitleText.BackgroundTransparency = 1
     TitleText.Position = UDim2.new(0.1, 0, 0.04, 0)
     TitleText.Size = UDim2.new(0.5, 0, 0.15, 0)
@@ -68,7 +70,8 @@ local function SpawnLoginSystem(SettingsLogin)
     TitleText.TextXAlignment = Enum.TextXAlignment.Left
     
     -- Bouton Fermer
-    local CloseButton = Instance.new("TextButton", BackgroundImage)
+    local CloseButton = Instance.new("TextButton")
+    CloseButton.Parent = BackgroundImage
     CloseButton.BackgroundTransparency = 1
     CloseButton.Position = UDim2.new(0.92, 0, 0.14, 0)
     CloseButton.Size = UDim2.new(0.06, 0, 0.08, 0)
@@ -80,7 +83,8 @@ local function SpawnLoginSystem(SettingsLogin)
     end)
     
     -- Champ Mot de Passe
-    local PasswordBox = Instance.new("TextBox", BackgroundImage)
+    local PasswordBox = Instance.new("TextBox")
+    PasswordBox.Parent = BackgroundImage
     PasswordBox.BackgroundTransparency = 1
     PasswordBox.Position = UDim2.new(0.33, 0, 0.42, 0)
     PasswordBox.Size = UDim2.new(0.47, 0, 0.15, 0)
@@ -91,14 +95,16 @@ local function SpawnLoginSystem(SettingsLogin)
     PasswordBox.TextSize = 18
     
     -- Bouton Valider
-    local ValidateBtn = Instance.new("TextButton", BackgroundImage)
+    local ValidateBtn = Instance.new("TextButton")
+    ValidateBtn.Parent = BackgroundImage
     ValidateBtn.BackgroundTransparency = 1
     ValidateBtn.Position = UDim2.new(0.3, 0, 0.68, 0)
     ValidateBtn.Size = UDim2.new(0.4, 0, 0.12, 0)
     ValidateBtn.Text = ""
     
     -- Bouton Lien
-    local LinkBtn = Instance.new("TextButton", BackgroundImage)
+    local LinkBtn = Instance.new("TextButton")
+    LinkBtn.Parent = BackgroundImage
     LinkBtn.BackgroundTransparency = 1
     LinkBtn.Position = UDim2.new(0.3, 0, 0.85, 0)
     LinkBtn.Size = UDim2.new(0.4, 0, 0.12, 0)
@@ -391,7 +397,7 @@ function SoroniceLib:CreateWindow(Config)
         end
     end
 
-    -- REMPLISSAGE PAGE RÉGLAGES
+    -- REMPLISSAGE AUTOMATIQUE RÉGLAGES
     CreateElement(SettingsPage, "Toggle", {
         Name = "💤 Mode AFK (Anti-Kick)",
         CurrentValue = false,
@@ -436,7 +442,7 @@ function SoroniceLib:CreateWindow(Config)
 		function TabFunctions:CreateButton(Config) CreateElement(Page, "Button", Config) end
         function TabFunctions:CreateToggle(Config) CreateElement(Page, "Toggle", Config) end
         
-        -- Fonctions vides pour éviter les erreurs (Correction console demandée)
+        -- Fonctions vides pour éviter les erreurs
         function TabFunctions:CreateColorPicker(Config) end 
         function TabFunctions:CreateSection(Name) end
         function TabFunctions:CreateLabel(Text) end
