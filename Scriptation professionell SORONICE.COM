@@ -1,10 +1,11 @@
--- [[ SORONICE UI LIBRARY - V5.2 (ARRÊT D'URGENCE TOTAL + RESET VITESSE) ]] --
+-- [[ SORONICE UI LIBRARY - V5.3 (VITESSE LIBRE + ANIMATION MINIMIZE) ]] --
 
 local SoroniceLib = {}
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local MarketplaceService = game:GetService("MarketplaceService") 
+local HttpService = game:GetService("HttpService")
 local LocalPlayer = game.Players.LocalPlayer
 local CoreGui = game:GetService("CoreGui")
 local VirtualUser = game:GetService("VirtualUser")
@@ -20,8 +21,8 @@ local Settings = {
 	AccentColor = Color3.fromRGB(0, 54, 203)
 }
 
--- --- [ LISTE DES ÉLÉMENTS ACTIFS (POUR LES ARRÊTER) ] ---
-local ActiveElements = {} 
+-- --- [ LISTE POUR L'ARRÊT D'URGENCE ] ---
+local ActiveToggles = {} -- On ne stocke que les toggles pour couper les boucles
 
 -- --- [ SYSTÈME AFK ] ---
 local antiAfkActive = false
@@ -239,6 +240,7 @@ function SoroniceLib:CreateWindow(Config)
         TargetSize = UDim2.new(0, 550, 0, 350)
     end
     
+    -- Ouverture Initiale
     MainFrame.Size = UDim2.new(0, 0, 0, 0)
     MainFrame.ClipsDescendants = true 
     TweenService:Create(MainFrame, TweenInfo.new(0.7, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = TargetSize}):Play()
@@ -290,6 +292,7 @@ function SoroniceLib:CreateWindow(Config)
 	TitleLabel.TextSize = 22
 	TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
+    -- [ANIMATION POUR LE BOUTON MINIMIZE (-)]
 	local MinBtn = Instance.new("TextButton")
 	MinBtn.Name = "Minimize"
 	MinBtn.Parent = TopBar
@@ -302,19 +305,31 @@ function SoroniceLib:CreateWindow(Config)
 	MinBtn.TextSize = 24
     
 	local IsHidden = false
-    local NotifShown = false 
+    local isAnimating = false -- Sécurité pour ne pas spammer
 
     local function ToggleVisibility()
+        if isAnimating then return end
+        isAnimating = true
+        
         IsHidden = not IsHidden
-        MainFrame.Visible = not IsHidden
-        if IsMobile then
-            if MobileOpenBtn then MobileOpenBtn.Visible = IsHidden end
+        
+        if IsHidden then
+            -- Animation Rétrécissement
+            local closeT = TweenService:Create(MainFrame, TweenInfo.new(0.7, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(0,0,0,0)})
+            closeT:Play()
+            closeT.Completed:Wait()
+            MainFrame.Visible = false
+            
+            if IsMobile and MobileOpenBtn then MobileOpenBtn.Visible = true end
         else
-            if IsHidden and not NotifShown then
-                NotifShown = true
-                game.StarterGui:SetCore("SendNotification", {Title = "Soronice Hub", Text = "Appuie sur P", Duration = 5})
-            end
+            -- Animation Agrandissement
+            if IsMobile and MobileOpenBtn then MobileOpenBtn.Visible = false end
+            MainFrame.Visible = true
+            local openT = TweenService:Create(MainFrame, TweenInfo.new(0.7, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = TargetSize})
+            openT:Play()
+            openT.Completed:Wait()
         end
+        isAnimating = false
     end
 
 	MinBtn.MouseButton1Click:Connect(ToggleVisibility)
@@ -323,7 +338,7 @@ function SoroniceLib:CreateWindow(Config)
         if not IsMobile and not gameProcessed and input.KeyCode == Settings.Keybind then ToggleVisibility() end
     end)
 
-    -- [FERMETURE AVEC ARRÊT D'URGENCE (KILL SWITCH)]
+    -- [FERMETURE AVEC ARRÊT DES BOUCLES UNIQUEMENT]
 	local CloseBtn = Instance.new("TextButton")
 	CloseBtn.Name = "Close"
 	CloseBtn.Parent = TopBar
@@ -336,25 +351,18 @@ function SoroniceLib:CreateWindow(Config)
 	CloseBtn.TextSize = 20
 	CloseBtn.MouseButton1Click:Connect(function() 
         
-        -- 1. RESET FORCÉ DU PERSONNAGE (Vitesse & Saut)
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            LocalPlayer.Character.Humanoid.WalkSpeed = 16
-            LocalPlayer.Character.Humanoid.JumpPower = 50
-        end
-
-        -- 2. DÉSACTIVATION DE TOUS LES TOGGLES ET SLIDERS
-        for _, Element in pairs(ActiveElements) do
-            if Element.Type == "Toggle" and Element.Callback then
-                -- On appelle le callback avec FALSE pour dire "Arrête ton script !"
-                Element.Callback(false) 
-            elseif Element.Type == "Slider" and Element.Callback then
-                -- On remet le slider à sa valeur MINIMUM (ex: 16 pour la vitesse)
-                Element.Callback(Element.Min or 0) 
+        -- 1. DÉSACTIVATION UNIQUEMENT DES TOGGLES (STOPPER LES LOOPS)
+        -- Je ne touche PAS aux Sliders pour ne pas reset la vitesse à 16.
+        for _, ToggleData in pairs(ActiveToggles) do
+            if ToggleData.Callback then
+                -- On appelle le callback avec FALSE. 
+                -- Si ton script de vitesse en boucle est dans un Toggle, ça l'arrêtera.
+                ToggleData.Callback(false) 
             end
         end
         
-        -- 3. ANIMATION DE FERMETURE (Vers le centre)
-        local CloseTween = TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Size = UDim2.new(0,0,0,0)})
+        -- 2. ANIMATION DE FERMETURE (Vers le centre)
+        local CloseTween = TweenService:Create(MainFrame, TweenInfo.new(0.7, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Size = UDim2.new(0,0,0,0)})
         CloseTween:Play()
         CloseTween.Completed:Wait() 
         
@@ -475,8 +483,8 @@ function SoroniceLib:CreateWindow(Config)
 
             local Toggled = Config.CurrentValue or false
             
-            -- [ENREGISTREMENT POUR LE RESET FORCE]
-            table.insert(ActiveElements, {Type = "Toggle", Callback = Config.Callback})
+            -- [ENREGISTREMENT POUR LE RESET : ON NE GARDE QUE LES TOGGLES]
+            table.insert(ActiveToggles, {Callback = Config.Callback})
 
             local function Update()
                 local TargetPos = Toggled and UDim2.new(1,-22,0.5,-10) or UDim2.new(0,2,0.5,-10)
@@ -665,19 +673,10 @@ function SoroniceLib:CreateWindow(Config)
              local ValLabel = Instance.new("TextLabel", SliderFrame); ValLabel.BackgroundTransparency=1; ValLabel.Position=UDim2.new(1,-60,0,0); ValLabel.Size=UDim2.new(0,50,0,20); ValLabel.TextColor3=Color3.new(1,1,1); ValLabel.TextXAlignment=Enum.TextXAlignment.Right; ValLabel.Font=Enum.Font.SourceSansBold; ValLabel.TextSize=16
              local Bar = Instance.new("Frame", SliderFrame); Bar.BackgroundColor3=Color3.fromRGB(10,10,10); Bar.Position=UDim2.new(0,10,0,25); Bar.Size=UDim2.new(1,-20,0,10); Instance.new("UICorner", Bar).CornerRadius=UDim.new(1,0)
              local Knob = Instance.new("TextButton", Bar); Knob.BackgroundColor3=Settings.AccentColor; Knob.Size=UDim2.new(0,20,0,20); Knob.AnchorPoint=Vector2.new(0.5,0.5); Knob.Position=UDim2.new(0,0,0.5,0); Knob.Text=""; Instance.new("UICorner", Knob).CornerRadius=UDim.new(1,0)
-             
              local Min, Max = Config.Range[1] or 0, Config.Range[2] or 100
-             local Default = Config.CurrentValue or Min
-             
-             -- [ENREGISTREMENT POUR RESET]
-             table.insert(ActiveElements, {Type = "Slider", Callback = Config.Callback, Min = Min})
-
-             ValLabel.Text = tostring(Default).."%"
+             local Default = Config.CurrentValue or Min; ValLabel.Text = tostring(Default).."%"
              Knob.Position = UDim2.new((Default-Min)/(Max-Min), 0, 0.5, 0)
              
-             -- TRIGGER AU LANCEMENT (SANS SAUVEGARDE)
-             if Config.Callback and Default ~= Min then Config.Callback(Default) end
-
              if not Locked then
                  local dragging = false
                  Knob.InputBegan:Connect(function(input) 
@@ -692,7 +691,6 @@ function SoroniceLib:CreateWindow(Config)
                         Knob.Position = UDim2.new(Percent, 0, 0.5, 0)
                         local Val = math.floor(Min + (Max-Min)*Percent)
                         ValLabel.Text = tostring(Val).."%"
-                        
                         if Config.Callback then Config.Callback(Val) end
                     end
                  end)
