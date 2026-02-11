@@ -1,4 +1,4 @@
--- [[ SORONICE UI LIBRARY - VERSION V3 CORRIGÉE AVEC LOGIN ACTIF (VERSION FINALE) ]] --
+-- [[ SORONICE UI LIBRARY - VERSION V4 CORRIGÉE AVEC LOGIN ACTIF (VERSION FINALE) ]] --
 
 local SoroniceLib = {}
 local UserInputService = game:GetService("UserInputService")
