@@ -1,4 +1,4 @@
--- [[ SORONICE UI LIBRARY - V3.9 (SCROLLING FIXÉ + COLOR PICKER + SIDEBAR CLEAN) ]] --
+-- [[ SORONICE UI LIBRARY - V4.0 (COLOR PICKER PRO + INPUTS PRÉCIS) ]] --
 
 local SoroniceLib = {}
 local UserInputService = game:GetService("UserInputService")
@@ -303,12 +303,10 @@ function SoroniceLib:CreateWindow(Config)
 	SidebarCorner.CornerRadius = UDim.new(0, 8)
 	SidebarCorner.Parent = Sidebar
     
-    -- [SIDEBAR SCROLLING SÉPARÉ] : On laisse de la place en bas pour le bouton réglages
     local SidebarScroll = Instance.new("ScrollingFrame")
     SidebarScroll.Parent = Sidebar
     SidebarScroll.BackgroundTransparency = 1
-    SidebarScroll.Position = UDim2.new(0, 0, 0, 0)
-    SidebarScroll.Size = UDim2.new(1, 0, 1, -50) -- On laisse 50px pour le bouton réglages
+    SidebarScroll.Size = UDim2.new(1, 0, 1, 0)
     SidebarScroll.ScrollBarThickness = 0
     SidebarScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
     
@@ -330,14 +328,13 @@ function SoroniceLib:CreateWindow(Config)
     end
     ContentContainer.ClipsDescendants = true 
 
-    -- [BOUTON RÉGLAGES] (Placé DANS la sidebar mais hors du scroll)
+    -- [BOUTON RÉGLAGES]
 	local SettingsBtn = Instance.new("TextButton")
 	SettingsBtn.Name = "Settings_Btn"
-	SettingsBtn.Parent = Sidebar -- Parenté à la Sidebar maintenant
+	SettingsBtn.Parent = MainFrame 
 	SettingsBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 	SettingsBtn.BackgroundTransparency = 0.5
-    SettingsBtn.Position = UDim2.new(0.5, -22, 1, -50) -- Centré en bas de la sidebar
-    SettingsBtn.AnchorPoint = Vector2.new(0, 0) -- Reset anchor pour éviter les décalages
+    SettingsBtn.Position = UDim2.new(0, 18, 1, -55)
 	SettingsBtn.Size = UDim2.new(0, 45, 0, 45)
 	SettingsBtn.Text = ""
     SettingsBtn.ZIndex = 2 
@@ -387,7 +384,7 @@ function SoroniceLib:CreateWindow(Config)
 			Btn.MouseButton1Click:Connect(function() 
                 TweenService:Create(BtnFrame, TweenInfo.new(0.1), {BackgroundColor3=Color3.fromRGB(50,50,50)}):Play(); wait(0.1)
                 TweenService:Create(BtnFrame, TweenInfo.new(0.1), {BackgroundColor3=Color3.fromRGB(30,30,30)}):Play()
-                if Config.Callback then Config.Callback() end -- Ajout sécurité
+                Config.Callback() 
             end)
         elseif Type == "Toggle" then
             local ToggleFrame = Instance.new("Frame", Page); ToggleFrame.BackgroundTransparency=1; ToggleFrame.Size=UDim2.new(1,-10,0,35)
@@ -402,7 +399,7 @@ function SoroniceLib:CreateWindow(Config)
                 local TargetCol = Toggled and Settings.AccentColor or Color3.fromRGB(40,40,40)
                 TweenService:Create(Knob, TweenInfo.new(0.2), {Position=TargetPos}):Play()
                 TweenService:Create(SwitchBg, TweenInfo.new(0.2), {BackgroundColor3=TargetCol}):Play()
-                if Config.Callback then Config.Callback(Toggled) end
+                Config.Callback(Toggled)
             end
             if Toggled then Update() end
             local Btn = Instance.new("TextButton", SwitchBg); Btn.BackgroundTransparency=1; Btn.Size=UDim2.new(1,0,1,0); Btn.Text=""
@@ -432,55 +429,88 @@ function SoroniceLib:CreateWindow(Config)
         elseif Type == "Label" then
             local LabelFrame = Instance.new("Frame", Page); LabelFrame.BackgroundTransparency=1; LabelFrame.Size=UDim2.new(1,-10,0,25)
             local Txt = Instance.new("TextLabel", LabelFrame); Txt.BackgroundTransparency=1; Txt.Size=UDim2.new(1,0,1,0); Txt.Position=UDim2.new(0,10,0,0)
-            Txt.Text = Config.Text or "Label"; Txt.TextColor3 = Settings.ThemeColor == Color3.fromRGB(255,255,255) and Color3.new(0,0,0) or Color3.new(1,1,1); Txt.TextXAlignment=Enum.TextXAlignment.Left; Txt.Font=Enum.Font.SourceSans; Txt.TextSize=16
+            Txt.Text = Config.Text; Txt.TextColor3 = Color3.new(1,1,1); Txt.TextXAlignment=Enum.TextXAlignment.Left; Txt.Font=Enum.Font.SourceSans; Txt.TextSize=16
         elseif Type == "Section" then
             local SectionFrame = Instance.new("Frame", Page); SectionFrame.BackgroundTransparency=1; SectionFrame.Size=UDim2.new(1,-10,0,30)
             local Txt = Instance.new("TextLabel", SectionFrame); Txt.BackgroundTransparency=1; Txt.Size=UDim2.new(1,0,1,0); Txt.Position=UDim2.new(0,10,0,0)
-            Txt.Text = Config.Text or "Section"; Txt.TextColor3 = Settings.AccentColor; Txt.TextXAlignment=Enum.TextXAlignment.Left; Txt.Font=Enum.Font.SourceSansBold; Txt.TextSize=18
+            Txt.Text = Config.Text; Txt.TextColor3 = Settings.AccentColor; Txt.TextXAlignment=Enum.TextXAlignment.Left; Txt.Font=Enum.Font.SourceSansBold; Txt.TextSize=18
         
-        -- [COLOR PICKER]
+        -- [LE NOUVEAU COLOR PICKER DE PRÉCISION]
         elseif Type == "ColorPicker" then
-            local CPFrame = Instance.new("Frame", Page)
-            CPFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25); CPFrame.Size = UDim2.new(1, -10, 0, 130)
-            Instance.new("UICorner", CPFrame).CornerRadius = UDim.new(0, 6)
+            local ColorFrame = Instance.new("Frame", Page)
+            ColorFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30); ColorFrame.Size = UDim2.new(1, -10, 0, 160)
+            Instance.new("UICorner", ColorFrame).CornerRadius = UDim.new(0, 6)
             
-            local Preview = Instance.new("Frame", CPFrame)
-            Preview.Position = UDim2.new(0, 10, 0, 10); Preview.Size = UDim2.new(0, 30, 0, 30); Preview.BackgroundColor3 = Config.Color or Color3.new(1,1,1)
+            local Label = Instance.new("TextLabel", ColorFrame); Label.BackgroundTransparency=1; Label.Position=UDim2.new(0,10,0,5); Label.Size=UDim2.new(1,0,0,20)
+            Label.Text = Config.Name; Label.TextColor3=Color3.new(1,1,1); Label.TextXAlignment=Enum.TextXAlignment.Left; Label.Font=Enum.Font.SourceSansBold; Label.TextSize=16
+
+            -- Prévisualisation Couleur
+            local Preview = Instance.new("Frame", ColorFrame); Preview.Position=UDim2.new(0,10,0,30); Preview.Size=UDim2.new(0,30,0,30); Preview.BackgroundColor3=Config.Color or Color3.new(1,1,1)
             Instance.new("UICorner", Preview).CornerRadius = UDim.new(0, 4)
-            
-            local Title = Instance.new("TextLabel", CPFrame)
-            Title.BackgroundTransparency = 1; Title.Position = UDim2.new(0, 50, 0, 10); Title.Size = UDim2.new(0, 200, 0, 30)
-            Title.Text = Config.Name or "Color Picker"; Title.TextColor3 = Color3.new(1,1,1); Title.TextXAlignment = Enum.TextXAlignment.Left; Title.Font = Enum.Font.SourceSansBold; Title.TextSize = 16
 
-            local R, G, B = math.floor(Preview.BackgroundColor3.R*255), math.floor(Preview.BackgroundColor3.G*255), math.floor(Preview.BackgroundColor3.B*255)
+            -- Carré Sat/Val (Grand dégradé)
+            local SVBox = Instance.new("TextButton", ColorFrame); SVBox.Position=UDim2.new(0, 60, 0, 30); SVBox.Size=UDim2.new(0, 150, 0, 100); SVBox.BackgroundColor3=Color3.new(1,0,0); SVBox.Text=""
+            local SVGrad = Instance.new("UIGradient", SVBox); SVGrad.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.new(1,1,1)), ColorSequenceKeypoint.new(1, Color3.new(1,0,0))}
+            local SVBlack = Instance.new("ImageLabel", SVBox); SVBlack.Size=UDim2.new(1,0,1,0); SVBlack.Image="rbxassetid://156579757"; SVBlack.BackgroundTransparency=1
             
-            local function CreateRGBBar(YPos, Col, Val, Callback)
-                local Bar = Instance.new("Frame", CPFrame); Bar.BackgroundColor3 = Color3.fromRGB(10,10,10); Bar.Position = UDim2.new(0, 10, 0, YPos); Bar.Size = UDim2.new(1, -20, 0, 10)
-                Instance.new("UICorner", Bar).CornerRadius = UDim.new(1, 0)
-                local Knob = Instance.new("TextButton", Bar); Knob.BackgroundColor3 = Col; Knob.Size = UDim2.new(0, 20, 0, 20); Knob.AnchorPoint = Vector2.new(0.5,0.5); Knob.Position = UDim2.new(Val/255, 0, 0.5, 0); Knob.Text = ""
-                Instance.new("UICorner", Knob).CornerRadius = UDim.new(1, 0)
-                
-                local dragging = false
-                Knob.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = true end end)
-                UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end end)
-                UserInputService.InputChanged:Connect(function(input)
-                    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-                        local Percent = math.clamp((input.Position.X - Bar.AbsolutePosition.X)/Bar.AbsoluteSize.X, 0, 1)
-                        Knob.Position = UDim2.new(Percent, 0, 0.5, 0)
-                        Callback(math.floor(Percent * 255))
+            -- Barre Arc-en-Ciel (Hue)
+            local HueBar = Instance.new("TextButton", ColorFrame); HueBar.Position=UDim2.new(0, 60, 0, 135); HueBar.Size=UDim2.new(0, 150, 0, 15); HueBar.Text=""
+            local HueGrad = Instance.new("UIGradient", HueBar); HueGrad.Color = ColorSequence.new{
+                ColorSequenceKeypoint.new(0, Color3.new(1,0,0)), ColorSequenceKeypoint.new(0.167, Color3.new(1,1,0)), ColorSequenceKeypoint.new(0.333, Color3.new(0,1,0)),
+                ColorSequenceKeypoint.new(0.5, Color3.new(0,1,1)), ColorSequenceKeypoint.new(0.667, Color3.new(0,0,1)), ColorSequenceKeypoint.new(0.833, Color3.new(1,0,1)), ColorSequenceKeypoint.new(1, Color3.new(1,0,0))
+            }
+
+            -- Inputs (R, G, B)
+            local function CreateInput(Placeholder, XOffset)
+                local Box = Instance.new("TextBox", ColorFrame); Box.BackgroundColor3=Color3.fromRGB(40,40,40); Box.Position=UDim2.new(0, 220, 0, XOffset); Box.Size=UDim2.new(0, 40, 0, 25)
+                Box.Font=Enum.Font.SourceSans; Box.PlaceholderText=Placeholder; Box.Text=""; Box.TextColor3=Color3.new(1,1,1); Box.TextSize=14
+                Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 4)
+                return Box
+            end
+            local RBox = CreateInput("R", 30); local GBox = CreateInput("G", 60); local BBox = CreateInput("B", 90)
+            local HexBox = Instance.new("TextBox", ColorFrame); HexBox.BackgroundColor3=Color3.fromRGB(40,40,40); HexBox.Position=UDim2.new(0, 220, 0, 120); HexBox.Size=UDim2.new(0, 60, 0, 25)
+            HexBox.Font=Enum.Font.SourceSans; HexBox.PlaceholderText="#Hex"; HexBox.Text=""; HexBox.TextColor3=Color3.new(1,1,1); HexBox.TextSize=14
+            Instance.new("UICorner", HexBox).CornerRadius = UDim.new(0, 4)
+
+            -- Logique HSV
+            local H, S, V = 0, 1, 1
+            local function UpdateColor(NewH, NewS, NewV)
+                H, S, V = NewH or H, NewS or S, NewV or V
+                local NewColor = Color3.fromHSV(H, S, V)
+                Preview.BackgroundColor3 = NewColor
+                SVBox.BackgroundColor3 = Color3.fromHSV(H, 1, 1)
+                RBox.Text = math.floor(NewColor.R * 255); GBox.Text = math.floor(NewColor.G * 255); BBox.Text = math.floor(NewColor.B * 255)
+                if Config.Callback then Config.Callback(NewColor) end
+            end
+
+            -- Dragging Logic
+            local draggingHue, draggingSV = false, false
+            UserInputService.InputChanged:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+                    if draggingHue then
+                        local percent = math.clamp((input.Position.X - HueBar.AbsolutePosition.X) / HueBar.AbsoluteSize.X, 0, 1)
+                        UpdateColor(percent, nil, nil)
+                    elseif draggingSV then
+                        local s = math.clamp((input.Position.X - SVBox.AbsolutePosition.X) / SVBox.AbsoluteSize.X, 0, 1)
+                        local v = 1 - math.clamp((input.Position.Y - SVBox.AbsolutePosition.Y) / SVBox.AbsoluteSize.Y, 0, 1)
+                        UpdateColor(nil, s, v)
                     end
-                end)
-            end
+                end
+            end)
             
-            local function UpdateColor()
-                local NewCol = Color3.fromRGB(R, G, B)
-                Preview.BackgroundColor3 = NewCol
-                if Config.Callback then Config.Callback(NewCol) end
-            end
+            -- Activation du Drag
+            HueBar.InputBegan:Connect(function(input) if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then draggingHue=true end end)
+            SVBox.InputBegan:Connect(function(input) if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then draggingSV=true end end)
+            UserInputService.InputEnded:Connect(function(input) if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then draggingHue=false; draggingSV=false end end)
 
-            CreateRGBBar(50, Color3.fromRGB(255,50,50), R, function(v) R = v; UpdateColor() end)
-            CreateRGBBar(80, Color3.fromRGB(50,255,50), G, function(v) G = v; UpdateColor() end)
-            CreateRGBBar(110, Color3.fromRGB(50,50,255), B, function(v) B = v; UpdateColor() end)
+            -- Inputs Manuels
+            local function FromRGB()
+                local r, g, b = tonumber(RBox.Text) or 0, tonumber(GBox.Text) or 0, tonumber(BBox.Text) or 0
+                local col = Color3.fromRGB(r, g, b)
+                local h, s, v = col:ToHSV()
+                UpdateColor(h, s, v)
+            end
+            RBox.FocusLost:Connect(FromRGB); GBox.FocusLost:Connect(FromRGB); BBox.FocusLost:Connect(FromRGB)
         end
     end
 
@@ -511,7 +541,7 @@ function SoroniceLib:CreateWindow(Config)
 			TabBtn.Text = string.sub(TabName, 1, 1); TabBtn.TextColor3 = Color3.new(0.8,0.8,0.8); TabBtn.TextSize=20; TabBtn.Font=Enum.Font.SourceSansBold
 		end
 
-        -- [SCROLLING DES PAGES]
+        -- [SCROLLING DES PAGES] : Activation du défilement ici
 		local Page = Instance.new("ScrollingFrame", ContentContainer)
 		Page.BackgroundTransparency=1; Page.Size=UDim2.new(1,0,1,0); Page.ScrollBarThickness=6; Page.Visible=FirstTab
         Page.AutomaticCanvasSize = Enum.AutomaticSize.Y -- C'est ça qui fait que ça s'agrandit tout seul
@@ -565,7 +595,7 @@ function SoroniceLib:CreateWindow(Config)
                     Knob.Position = UDim2.new(Percent, 0, 0.5, 0)
                     local Val = math.floor(Min + (Max-Min)*Percent)
                     ValLabel.Text = tostring(Val).."%"
-                    if Config.Callback then Config.Callback(Val) end
+                    Config.Callback(Val)
                 end
              end)
         end
