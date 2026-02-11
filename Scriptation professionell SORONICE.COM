@@ -1,11 +1,11 @@
--- [[ SORONICE UI LIBRARY - V5.0 (ANIMATIONS + SAVE SYSTEM + AUTO-STOP) ]] --
+-- [[ SORONICE UI LIBRARY - V5.1 (SAVE FIX, AUTO-STOP TOTAL, CENTER ANIMATION) ]] --
 
 local SoroniceLib = {}
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local MarketplaceService = game:GetService("MarketplaceService") 
-local HttpService = game:GetService("HttpService") -- AJOUTÉ POUR LA SAUVEGARDE
+local HttpService = game:GetService("HttpService")
 local LocalPlayer = game.Players.LocalPlayer
 local CoreGui = game:GetService("CoreGui")
 local VirtualUser = game:GetService("VirtualUser")
@@ -21,10 +21,10 @@ local Settings = {
 	AccentColor = Color3.fromRGB(0, 54, 203)
 }
 
--- --- [ SYSTÈME DE SAUVEGARDE ] ---
+-- --- [ GESTION SAUVEGARDE & RESET ] ---
 local ConfigName = "Soronice_Config.json"
-local LibrarySettings = {} -- Stocke les valeurs actuelles
-local TogglesToStop = {} -- Liste pour arrêter les scripts à la fermeture
+local LibrarySettings = {} -- Ce qui sera sauvegardé
+local ActiveElements = {}  -- Liste pour tout éteindre à la fermeture
 
 local function SaveSettings()
     if writefile then
@@ -147,9 +147,7 @@ end
 -- --- [ CRÉATION DE LA FENÊTRE ] ---
 
 function SoroniceLib:CreateWindow(Config)
-    -- Chargement des sauvegardes au lancement
-    local SavedData = LoadSettings()
-
+    local SavedData = LoadSettings() -- Chargement initial
     if Config.KeySystem == true then SpawnLoginSystem(Config.KeySettings or {}) end
 
 	local TitleName = Config.Name or "SORONICE HUB"
@@ -160,7 +158,7 @@ function SoroniceLib:CreateWindow(Config)
 	ScreenGui.Parent = CoreGui
     ScreenGui.ResetOnSpawn = false
 
-    -- [FONCTION APPLY LOCK]
+    -- [APPLY LOCK FUNCTION]
     local function ApplyLock(TargetFrame, ElementConfig)
         if not ElementConfig then return false end
         
@@ -218,6 +216,7 @@ function SoroniceLib:CreateWindow(Config)
         MobileOpenBtn.Image = Config.MobileImage or "rbxassetid://133601263847208"
         MobileOpenBtn.Visible = false 
         Instance.new("UICorner", MobileOpenBtn).CornerRadius = UDim.new(0, 12)
+        
         local dragging_mob, dragInput_mob, dragStart_mob, startPos_mob
         MobileOpenBtn.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -251,19 +250,22 @@ function SoroniceLib:CreateWindow(Config)
 	MainFrame.BackgroundColor3 = Settings.ThemeColor
 	MainFrame.BackgroundTransparency = 0.2
     
-    -- Taille Finale Cible
+    -- [ANIMATION CENTER] : AnchorPoint à 0.5, 0.5
+    MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    
+    -- Position et Taille Cible
     local TargetSize
     if IsMobile then
-        MainFrame.Position = UDim2.new(0.5, -200, 0.5, -130)
+        MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0) -- Centre absolu
         TargetSize = UDim2.new(0, 400, 0, 260)
     else
-	    MainFrame.Position = UDim2.new(0.5, -250, 0.5, -175)
+	    MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0) -- Centre absolu
         TargetSize = UDim2.new(0, 550, 0, 350)
     end
     
-    -- [ANIMATION D'OUVERTURE] : Commence à 0 et grandit
+    -- Animation Ouverture
     MainFrame.Size = UDim2.new(0, 0, 0, 0)
-    MainFrame.ClipsDescendants = true -- Important pour l'anim
+    MainFrame.ClipsDescendants = true 
     TweenService:Create(MainFrame, TweenInfo.new(0.7, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = TargetSize}):Play()
 	
 	local MainCorner = Instance.new("UICorner")
@@ -346,7 +348,7 @@ function SoroniceLib:CreateWindow(Config)
         if not IsMobile and not gameProcessed and input.KeyCode == Settings.Keybind then ToggleVisibility() end
     end)
 
-    -- [BOUTON CROIX / FERMETURE AVEC SAUVEGARDE & ANIMATION]
+    -- [FERMETURE INTELLIGENTE : SAVE + STOP + ANIMATION]
 	local CloseBtn = Instance.new("TextButton")
 	CloseBtn.Name = "Close"
 	CloseBtn.Parent = TopBar
@@ -358,21 +360,23 @@ function SoroniceLib:CreateWindow(Config)
 	CloseBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 	CloseBtn.TextSize = 20
 	CloseBtn.MouseButton1Click:Connect(function() 
-        -- 1. SAUVEGARDER L'ÉTAT
+        -- 1. SAUVEGARDER L'ÉTAT ACTUEL
         SaveSettings()
         
-        -- 2. ARRÊTER TOUS LES SCRIPTS (Désactiver les toggles)
-        for _, toggleData in pairs(TogglesToStop) do
-            if toggleData.Callback then
-                -- On appelle le callback avec false pour stopper le script
-                toggleData.Callback(false) 
+        -- 2. RESET TOTAL (Désactiver Toggles, Reset Sliders)
+        for _, Element in pairs(ActiveElements) do
+            if Element.Type == "Toggle" and Element.Callback then
+                Element.Callback(false) -- Coupe le script
+            elseif Element.Type == "Slider" and Element.Callback then
+                -- On reset à la valeur min pour couper l'effet (ex: vitesse)
+                Element.Callback(Element.Min or 0) 
             end
         end
         
-        -- 3. ANIMATION DE FERMETURE (Rétrécissement)
+        -- 3. ANIMATION DE FERMETURE (Vers le centre)
         local CloseTween = TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Size = UDim2.new(0,0,0,0)})
         CloseTween:Play()
-        CloseTween.Completed:Wait() -- On attend la fin de l'anim
+        CloseTween.Completed:Wait() 
         
         ScreenGui:Destroy() 
     end)
@@ -414,7 +418,6 @@ function SoroniceLib:CreateWindow(Config)
     end
     ContentContainer.ClipsDescendants = true 
 
-    -- [BOUTON RÉGLAGES]
 	local SettingsBtn = Instance.new("TextButton")
 	SettingsBtn.Name = "Settings_Btn"
 	SettingsBtn.Parent = Sidebar 
@@ -433,7 +436,6 @@ function SoroniceLib:CreateWindow(Config)
 	SettingsIcon.Size = UDim2.new(0, 35, 0, 35)
 	SettingsIcon.Image = "rbxassetid://74182569229556"
 
-    -- [SCROLLING DES RÉGLAGES]
     local SettingsPage = Instance.new("ScrollingFrame")
     SettingsPage.Name = "Settings_Page"
     SettingsPage.Parent = ContentContainer
@@ -491,17 +493,14 @@ function SoroniceLib:CreateWindow(Config)
             
             local Locked = ApplyLock(ToggleFrame, Config)
 
-            -- CHARGEMENT DE LA SAUVEGARDE
+            -- [CHARGEMENT SAVE]
             local Toggled = Config.CurrentValue or false
             if Config.Flag and SavedData[Config.Flag] ~= nil then
                 Toggled = SavedData[Config.Flag]
             end
 
-            -- Ajout à la liste d'arrêt (Pour la fermeture)
-            table.insert(TogglesToStop, {
-                Callback = Config.Callback,
-                Flag = Config.Flag
-            })
+            -- [ENREGISTREMENT POUR LE RESET]
+            table.insert(ActiveElements, {Type = "Toggle", Callback = Config.Callback})
 
             local function Update()
                 local TargetPos = Toggled and UDim2.new(1,-22,0.5,-10) or UDim2.new(0,2,0.5,-10)
@@ -509,13 +508,10 @@ function SoroniceLib:CreateWindow(Config)
                 TweenService:Create(Knob, TweenInfo.new(0.2), {Position=TargetPos}):Play()
                 TweenService:Create(SwitchBg, TweenInfo.new(0.2), {BackgroundColor3=TargetCol}):Play()
                 
-                -- MISE A JOUR DES DONNÉES LIVE
+                -- SAVE LIVE
                 if Config.Flag then LibrarySettings[Config.Flag] = Toggled end
-                
                 if Config.Callback then Config.Callback(Toggled) end
             end
-            
-            -- Si c'était sauvegardé comme activé, on lance l'update (donc on lance le script)
             if Toggled then Update() end
             
             local Btn = Instance.new("TextButton", SwitchBg); Btn.BackgroundTransparency=1; Btn.Size=UDim2.new(1,0,1,0); Btn.Text=""
@@ -556,7 +552,6 @@ function SoroniceLib:CreateWindow(Config)
             local Txt = Instance.new("TextLabel", SectionFrame); Txt.BackgroundTransparency=1; Txt.Size=UDim2.new(1,0,1,0); Txt.Position=UDim2.new(0,10,0,0)
             Txt.Text = Config.Text; Txt.TextColor3 = Settings.AccentColor; Txt.TextXAlignment=Enum.TextXAlignment.Left; Txt.Font=Enum.Font.SourceSansBold; Txt.TextSize=18
         
-        -- [COLOR PICKER PRO]
         elseif Type == "ColorPicker" then
             local ColorFrame = Instance.new("Frame", Page)
             ColorFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30); ColorFrame.Size = UDim2.new(1, -10, 0, 160)
@@ -615,11 +610,9 @@ function SoroniceLib:CreateWindow(Config)
                         end
                     end
                 end)
-                
                 HueBar.InputBegan:Connect(function(input) if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then draggingHue=true end end)
                 SVBox.InputBegan:Connect(function(input) if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then draggingSV=true end end)
                 UserInputService.InputEnded:Connect(function(input) if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then draggingHue=false; draggingSV=false end end)
-
                 local function FromRGB()
                     local r, g, b = tonumber(RBox.Text) or 0, tonumber(GBox.Text) or 0, tonumber(BBox.Text) or 0
                     local col = Color3.fromRGB(r, g, b)
@@ -643,12 +636,7 @@ function SoroniceLib:CreateWindow(Config)
         end
     })
     
-    if not IsMobile then
-        CreateElement(SettingsPage, "Keybind", {
-            Name = "Touche pour Cacher/Montrer",
-            Callback = function() end 
-        })
-    end
+    if not IsMobile then CreateElement(SettingsPage, "Keybind", { Name = "Touche pour Cacher/Montrer", Callback = function() end }) end
 
 	function WindowFunctions:CreateTab(TabName, TabImageId, LockConfig) 
 		local TabBtn = Instance.new("TextButton", SidebarScroll) 
@@ -661,8 +649,6 @@ function SoroniceLib:CreateWindow(Config)
 			TabBtn.Text = string.sub(TabName, 1, 1); TabBtn.TextColor3 = Color3.new(0.8,0.8,0.8); TabBtn.TextSize=20; TabBtn.Font=Enum.Font.SourceSansBold
 		end
 
-        -- [APPLY LOCK ON TAB]
-        local IsTabLocked = false
         if LockConfig and LockConfig.Locked then
              if LockConfig.LockMode == "Frame" then else ApplyLock(TabBtn, LockConfig) end
         end
@@ -677,9 +663,7 @@ function SoroniceLib:CreateWindow(Config)
         PageLayout.Padding = UDim.new(0,8)
         PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
-        if LockConfig and LockConfig.Locked and LockConfig.LockMode == "Frame" then
-            ApplyLock(Page, LockConfig) 
-        end
+        if LockConfig and LockConfig.Locked and LockConfig.LockMode == "Frame" then ApplyLock(Page, LockConfig) end
 
 		TabBtn.MouseButton1Click:Connect(function()
             local Allowed, Reason = CheckAccess(LockConfig)
@@ -702,28 +686,36 @@ function SoroniceLib:CreateWindow(Config)
         
         function TabFunctions:CreateSlider(Config)
              local SliderFrame = Instance.new("Frame", Page); SliderFrame.BackgroundTransparency=1; SliderFrame.Size=UDim2.new(1,-10,0,50)
-             
              local Locked = ApplyLock(SliderFrame, Config)
-
              local Label = Instance.new("TextLabel", SliderFrame); Label.BackgroundTransparency=1; Label.Position=UDim2.new(0,10,0,0); Label.Size=UDim2.new(1,0,0,20); Label.Text=Config.Name; Label.TextColor3=Color3.new(1,1,1); Label.TextXAlignment=Enum.TextXAlignment.Left; Label.Font=Enum.Font.SourceSans; Label.TextSize=16
              local ValLabel = Instance.new("TextLabel", SliderFrame); ValLabel.BackgroundTransparency=1; ValLabel.Position=UDim2.new(1,-60,0,0); ValLabel.Size=UDim2.new(0,50,0,20); ValLabel.TextColor3=Color3.new(1,1,1); ValLabel.TextXAlignment=Enum.TextXAlignment.Right; ValLabel.Font=Enum.Font.SourceSansBold; ValLabel.TextSize=16
              local Bar = Instance.new("Frame", SliderFrame); Bar.BackgroundColor3=Color3.fromRGB(10,10,10); Bar.Position=UDim2.new(0,10,0,25); Bar.Size=UDim2.new(1,-20,0,10); Instance.new("UICorner", Bar).CornerRadius=UDim.new(1,0)
              local Knob = Instance.new("TextButton", Bar); Knob.BackgroundColor3=Settings.AccentColor; Knob.Size=UDim2.new(0,20,0,20); Knob.AnchorPoint=Vector2.new(0.5,0.5); Knob.Position=UDim2.new(0,0,0.5,0); Knob.Text=""; Instance.new("UICorner", Knob).CornerRadius=UDim.new(1,0)
+             
              local Min, Max = Config.Range[1] or 0, Config.Range[2] or 100
-             local Default = Config.CurrentValue or Min; ValLabel.Text = tostring(Default).."%"
+             local Default = Config.CurrentValue or Min
+             
+             -- [CHARGEMENT SAVE SLIDER]
+             if Config.Flag and SavedData[Config.Flag] ~= nil then
+                 Default = SavedData[Config.Flag]
+             end
+             
+             -- [ENREGISTREMENT POUR RESET]
+             table.insert(ActiveElements, {Type = "Slider", Callback = Config.Callback, Min = Min})
+
+             ValLabel.Text = tostring(Default).."%"
              Knob.Position = UDim2.new((Default-Min)/(Max-Min), 0, 0.5, 0)
              
+             -- TRIGGER AU LANCEMENT SI SAUVEGARDÉ
+             if Config.Callback and Default ~= Min then Config.Callback(Default) end
+
              if not Locked then
                  local dragging = false
                  Knob.InputBegan:Connect(function(input) 
-                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
-                        dragging = true 
-                    end 
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = true end 
                  end)
                  UserInputService.InputEnded:Connect(function(input) 
-                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
-                        dragging = false 
-                    end 
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end 
                  end)
                  UserInputService.InputChanged:Connect(function(input)
                     if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
@@ -731,6 +723,9 @@ function SoroniceLib:CreateWindow(Config)
                         Knob.Position = UDim2.new(Percent, 0, 0.5, 0)
                         local Val = math.floor(Min + (Max-Min)*Percent)
                         ValLabel.Text = tostring(Val).."%"
+                        
+                        -- SAVE LIVE
+                        if Config.Flag then LibrarySettings[Config.Flag] = Val end
                         if Config.Callback then Config.Callback(Val) end
                     end
                  end)
