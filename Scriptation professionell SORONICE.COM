@@ -1,4 +1,4 @@
--- [[ SORONICE UI LIBRARY - V7.1 (CORRECTIF ESPACE VIDE + LOGO FIX + STATS AJOUTÉES) ]] --
+-- [[ SORONICE UI LIBRARY - V7.0 (V6.1 + HEADER PRO + DROPDOWN) ]] --
 
 local SoroniceLib = {}
 local UserInputService = game:GetService("UserInputService")
@@ -6,7 +6,6 @@ local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local MarketplaceService = game:GetService("MarketplaceService") 
 local HttpService = game:GetService("HttpService")
-local StatsService = game:GetService("Stats") 
 local LocalPlayer = game.Players.LocalPlayer
 local CoreGui = game:GetService("CoreGui")
 local VirtualUser = game:GetService("VirtualUser")
@@ -20,9 +19,8 @@ local Settings = {
 	Keybind = Enum.KeyCode.P,
 	ThemeColor = Color3.fromRGB(20, 20, 20),
 	AccentColor = Color3.fromRGB(0, 54, 203),
-    TextColor = Color3.fromRGB(255, 255, 255),      
-    SubTextColor = Color3.fromRGB(180, 180, 180),
-    StatsColor = Color3.fromRGB(40, 40, 40) -- Couleur de fond des stats
+    TextColor = Color3.fromRGB(255, 255, 255),      -- Couleur Texte Principal
+    SubTextColor = Color3.fromRGB(180, 180, 180)    -- Couleur Sous-Texte
 }
 
 -- --- [ TABLEAU DES ÉLÉMENTS ACTIFS ] ---
@@ -37,7 +35,7 @@ LocalPlayer.Idled:Connect(function()
     end
 end)
 
--- --- [ DÉTECTION NOM DU JEU ] ---
+-- --- [ AJOUT : DÉTECTION NOM DU JEU ] ---
 local GameNameText = "Détection..."
 task.spawn(function()
     local success, info = pcall(function()
@@ -147,16 +145,10 @@ function SoroniceLib:CreateWindow(Config)
     if Config.KeySystem == true then SpawnLoginSystem(Config.KeySettings or {}) end
 
 	local TitleName = Config.Name or "SORONICE HUB"
-    
-    -- [PARAMÈTRES AJOUTÉS]
+    -- [NOUVEAUX PARAMÈTRES RÉCUPÉRÉS]
     local BrandLogoId = Config.BrandLogo or "" 
     local VersionTagText = Config.VersionTag or "" 
     local StatusIconsList = Config.StatusIcons or {}
-    
-    -- [NOUVEAUX SWITCHS STATS]
-    local ShowDevice = Config.ShowDevice or false
-    local ShowPing = Config.ShowPing or false
-    local ShowFPS = Config.ShowFPS or false
 
 	if CoreGui:FindFirstChild("Soronice_V6") then CoreGui:FindFirstChild("Soronice_V6"):Destroy() end
     if CoreGui:FindFirstChild("Soronice_V7") then CoreGui:FindFirstChild("Soronice_V7"):Destroy() end
@@ -255,16 +247,16 @@ function SoroniceLib:CreateWindow(Config)
 	MainFrame.Name = "MainFrame"
 	MainFrame.Parent = ScreenGui
 	MainFrame.BackgroundColor3 = Settings.ThemeColor
-	MainFrame.BackgroundTransparency = 0.15
+	MainFrame.BackgroundTransparency = 0.2
     MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
     
     local TargetSize
     if IsMobile then
         MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0) 
-        TargetSize = UDim2.new(0, 420, 0, 280) -- Un peu plus large pour les stats
+        TargetSize = UDim2.new(0, 400, 0, 270) -- Ajusté pour le nouveau header
     else
 	    MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-        TargetSize = UDim2.new(0, 620, 0, 370) -- Assez large pour les stats en haut
+        TargetSize = UDim2.new(0, 550, 0, 360) -- Ajusté pour le nouveau header
     end
     
     MainFrame.Size = UDim2.new(0, 0, 0, 0)
@@ -279,43 +271,38 @@ function SoroniceLib:CreateWindow(Config)
 	TopBar.Name = "TopBar"
 	TopBar.Parent = MainFrame
 	TopBar.BackgroundTransparency = 1 
-	TopBar.Size = UDim2.new(1, 0, 0, 50) 
+	TopBar.Size = UDim2.new(1, 0, 0, 50) -- [MODIFIÉ: Plus grand pour contenir les infos]
     TopBar.Position = UDim2.new(0,0,0,0)
     TopBar.ZIndex = 10
 
-    -- [CONTAINER GAUCHE (LOGO + TEXTES)]
-    local LeftContainer = Instance.new("Frame")
-    LeftContainer.Parent = TopBar
+    -- [NOUVEAU: CONTAINER GAUCHE (LOGO + TEXTES)]
+    local LeftContainer = Instance.new("Frame", TopBar)
     LeftContainer.BackgroundTransparency = 1
     LeftContainer.Position = UDim2.new(0, 10, 0, 0)
-    LeftContainer.Size = UDim2.new(0.35, 0, 1, 0)
+    LeftContainer.Size = UDim2.new(0.6, 0, 1, 0)
     
-    local LeftLayout = Instance.new("UIListLayout")
-    LeftLayout.Parent = LeftContainer
+    local LeftLayout = Instance.new("UIListLayout", LeftContainer)
     LeftLayout.FillDirection = Enum.FillDirection.Horizontal
     LeftLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    LeftLayout.Padding = UDim.new(0, 8)
+    LeftLayout.Padding = UDim.new(0, 10)
     LeftLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 
-    -- [CORRECTION LOGO] : ZIndex à 100 pour être sûr d'être visible
+    -- 1. Logo de Marque (Optionnel)
     if BrandLogoId ~= "" then
-        local BrandLogo = Instance.new("ImageLabel")
-        BrandLogo.Parent = LeftContainer
+        local BrandLogo = Instance.new("ImageLabel", LeftContainer)
         BrandLogo.Size = UDim2.new(0, 32, 0, 32)
         BrandLogo.BackgroundTransparency = 1
-        BrandLogo.Image = "rbxassetid://" .. BrandLogoId -- Ajout auto de rbxassetid:// si absent dans le config, mais mieux vaut le mettre
+        BrandLogo.Image = "rbxassetid://" .. BrandLogoId
         BrandLogo.LayoutOrder = 1
-        BrandLogo.ZIndex = 100 
     end
 
-    local TextVerticalContainer = Instance.new("Frame")
-    TextVerticalContainer.Parent = LeftContainer
+    -- Container Textes Vertical
+    local TextVerticalContainer = Instance.new("Frame", LeftContainer)
     TextVerticalContainer.BackgroundTransparency = 1
     TextVerticalContainer.Size = UDim2.new(0, 200, 0, 38)
     TextVerticalContainer.LayoutOrder = 2
 
-	local TitleLabel = Instance.new("TextLabel")
-    TitleLabel.Parent = TextVerticalContainer
+	local TitleLabel = Instance.new("TextLabel", TextVerticalContainer)
 	TitleLabel.BackgroundTransparency = 1
 	TitleLabel.Size = UDim2.new(1, 0, 0.6, 0)
 	TitleLabel.Font = Enum.Font.FredokaOne
@@ -324,9 +311,8 @@ function SoroniceLib:CreateWindow(Config)
 	TitleLabel.TextSize = 18
 	TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-    -- [NOM DU JEU]
-    local GameLabel = Instance.new("TextLabel")
-    GameLabel.Parent = TextVerticalContainer
+    -- [AJOUT: NOM DU JEU SOUS LE TITRE]
+    local GameLabel = Instance.new("TextLabel", TextVerticalContainer)
     GameLabel.BackgroundTransparency = 1
     GameLabel.Position = UDim2.new(0,0,0.6,0)
     GameLabel.Size = UDim2.new(1, 0, 0.4, 0)
@@ -340,145 +326,69 @@ function SoroniceLib:CreateWindow(Config)
         GameLabel.Text = GameNameText
     end)
 
-    -- [CONTAINER DROITE (STATS + BOUTONS)]
-    local RightContainer = Instance.new("Frame")
-    RightContainer.Parent = TopBar
+    -- [NOUVEAU: CONTAINER DROITE]
+    local RightContainer = Instance.new("Frame", TopBar)
     RightContainer.BackgroundTransparency = 1
     RightContainer.AnchorPoint = Vector2.new(1, 0)
     RightContainer.Position = UDim2.new(1, -10, 0, 0)
-    RightContainer.Size = UDim2.new(0.65, 0, 1, 0)
+    RightContainer.Size = UDim2.new(0.4, 0, 1, 0)
 
-    local RightLayout = Instance.new("UIListLayout")
-    RightLayout.Parent = RightContainer
+    local RightLayout = Instance.new("UIListLayout", RightContainer)
     RightLayout.FillDirection = Enum.FillDirection.Horizontal
     RightLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
     RightLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    RightLayout.Padding = UDim.new(0, 6)
+    RightLayout.Padding = UDim.new(0, 8)
     RightLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 
-    -- Fonction Helper pour Badge Stats
-    local function CreateStatBadge(Icon, Text, Color, Order)
-        local Badge = Instance.new("Frame")
-        Badge.Parent = RightContainer
-        Badge.BackgroundColor3 = Color or Settings.StatsColor
-        Badge.Size = UDim2.new(0, 0, 0, 24)
-        Badge.AutomaticSize = Enum.AutomaticSize.X
-        Badge.LayoutOrder = Order
-        Instance.new("UICorner", Badge).CornerRadius = UDim.new(0, 6)
-        
-        local ContentLayout = Instance.new("UIListLayout")
-        ContentLayout.Parent = Badge
-        ContentLayout.FillDirection = Enum.FillDirection.Horizontal
-        ContentLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-        ContentLayout.Padding = UDim.new(0, 5)
-        
-        -- Padding invisible gauche
-        local PadL = Instance.new("Frame", Badge); PadL.BackgroundTransparency=1; PadL.Size=UDim2.new(0,2,0,1)
-
-        if Icon and Icon ~= "" then
-            local Ico = Instance.new("ImageLabel", Badge)
-            Ico.Size = UDim2.new(0, 16, 0, 16)
-            Ico.BackgroundTransparency = 1
-            Ico.Image = Icon
-            Ico.ImageColor3 = Settings.TextColor
-        end
-
-        local Lbl = Instance.new("TextLabel", Badge)
-        Lbl.BackgroundTransparency = 1
-        Lbl.AutomaticSize = Enum.AutomaticSize.X
-        Lbl.Size = UDim2.new(0, 0, 1, 0)
-        Lbl.Font = Enum.Font.GothamBold
-        Lbl.Text = Text
-        Lbl.TextColor3 = Settings.TextColor
-        Lbl.TextSize = 11
-
-        -- Padding invisible droite
-        local PadR = Instance.new("Frame", Badge); PadR.BackgroundTransparency=1; PadR.Size=UDim2.new(0,2,0,1)
-        
-        return Lbl
-    end
-
-    -- [AJOUT STATS]
-    
-    -- 1. DEVICE (Plateforme)
-    if ShowDevice then
-        local DeviceTxt = "PC"
-        local DeviceIcon = "rbxassetid://101516465585914" -- Icône par défaut (PC/Generic)
-        if UserInputService.TouchEnabled and not UserInputService.MouseEnabled then 
-            DeviceTxt = "Mobile" 
-        elseif UserInputService.GamepadEnabled then 
-            DeviceTxt = "Console"
-        end
-        CreateStatBadge("", DeviceTxt, Color3.fromRGB(100, 60, 255), 1)
-    end
-
-    -- 2. TAG VERSION
+    -- Tag de Version
     if VersionTagText ~= "" then
-        CreateStatBadge("rbxassetid://101516465585914", VersionTagText, Settings.AccentColor, 2)
+        local TagContainer = Instance.new("Frame", RightContainer)
+        TagContainer.BackgroundColor3 = Settings.AccentColor
+        TagContainer.Size = UDim2.new(0, 0, 0, 20)
+        TagContainer.AutomaticSize = Enum.AutomaticSize.X
+        Instance.new("UICorner", TagContainer).CornerRadius = UDim.new(0, 4)
+        local TagLabel = Instance.new("TextLabel", TagContainer)
+        TagLabel.BackgroundTransparency = 1; TagLabel.Size = UDim2.new(1, 0, 1, 0); TagLabel.Font = Enum.Font.SourceSansBold
+        TagLabel.Text = " " .. VersionTagText .. " "; TagLabel.TextColor3 = Settings.TextColor; TagLabel.TextSize = 12
     end
 
-    -- 3. FPS
-    if ShowFPS then
-        local FpsLbl = CreateStatBadge("", "FPS: 60", Color3.fromRGB(255, 170, 0), 3)
-        task.spawn(function()
-            local lastTime = tick()
-            local frameCount = 0
-            RunService.RenderStepped:Connect(function()
-                frameCount = frameCount + 1
-                if tick() - lastTime >= 1 then
-                    FpsLbl.Text = "FPS: " .. frameCount
-                    frameCount = 0
-                    lastTime = tick()
-                end
-            end)
-        end)
+    -- Icônes de Statut
+    if #StatusIconsList > 0 then
+        local StatusContainer = Instance.new("Frame", RightContainer)
+        StatusContainer.BackgroundTransparency = 1
+        StatusContainer.Size = UDim2.new(0, 0, 0, 24)
+        StatusContainer.AutomaticSize = Enum.AutomaticSize.X
+        local StatusLayout = Instance.new("UIListLayout", StatusContainer); StatusLayout.FillDirection = Enum.FillDirection.Horizontal; StatusLayout.Padding = UDim.new(0, 5)
+        for _, iconId in ipairs(StatusIconsList) do
+            local Icon = Instance.new("ImageLabel", StatusContainer); Icon.Size = UDim2.new(0, 24, 0, 24); Icon.BackgroundTransparency = 1; Icon.Image = "rbxassetid://" .. iconId; Icon.ImageColor3 = Settings.SubTextColor
+        end
     end
-
-    -- 4. PING
-    if ShowPing then
-        local PingLbl = CreateStatBadge("", "Ping: 0ms", Color3.fromRGB(0, 200, 80), 4)
-        task.spawn(function()
-            while true do
-                if StatsService.Network:FindFirstChild("ServerStatsItem") then
-                    local ping = math.floor(StatsService.Network.ServerStatsItem["Data Ping"]:GetValue())
-                    PingLbl.Text = "Ping: " .. ping .. "ms"
-                end
-                wait(1)
-            end
-        end)
-    end
-
-    -- BOUTONS TOPBAR
-    local SearchBtn = Instance.new("ImageButton")
+    
+    -- [BOUTON DE RECHERCHE (LOUPE) AVEC TON NOUVEL ID]
+    local SearchBtn = Instance.new("ImageButton", RightContainer) -- Parenté au RightContainer
     SearchBtn.Name = "SearchButton"
-    SearchBtn.Parent = RightContainer
     SearchBtn.BackgroundTransparency = 1
-    SearchBtn.Size = UDim2.new(0, 28, 0, 28)
-    SearchBtn.Image = "rbxassetid://76095216033555" -- TON ID
+    SearchBtn.Size = UDim2.new(0, 30, 0, 30)
+    SearchBtn.Image = "rbxassetid://76095216033555" 
     SearchBtn.ImageColor3 = Color3.fromRGB(150, 150, 150)
-    SearchBtn.LayoutOrder = 10
 
-	local MinBtn = Instance.new("TextButton")
-    MinBtn.Parent = RightContainer
+	local MinBtn = Instance.new("TextButton", RightContainer)
 	MinBtn.Name = "Minimize"
 	MinBtn.BackgroundTransparency = 1
-	MinBtn.Size = UDim2.new(0, 28, 0, 28)
+	MinBtn.Size = UDim2.new(0, 30, 0, 30)
 	MinBtn.Font = Enum.Font.SourceSansBold
 	MinBtn.Text = "-"
 	MinBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 	MinBtn.TextSize = 24
-    MinBtn.LayoutOrder = 11
     
-	local CloseBtn = Instance.new("TextButton")
-    CloseBtn.Parent = RightContainer
+	local CloseBtn = Instance.new("TextButton", RightContainer)
 	CloseBtn.Name = "Close"
 	CloseBtn.BackgroundTransparency = 1
-	CloseBtn.Size = UDim2.new(0, 28, 0, 28)
+	CloseBtn.Size = UDim2.new(0, 30, 0, 30)
 	CloseBtn.Font = Enum.Font.SourceSansBold
 	CloseBtn.Text = "X"
 	CloseBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 	CloseBtn.TextSize = 20
-    CloseBtn.LayoutOrder = 12
 
 	local IsHidden = false
     local isAnimating = false
@@ -528,7 +438,7 @@ function SoroniceLib:CreateWindow(Config)
     SearchBarFrame.Parent = MainFrame
     SearchBarFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     SearchBarFrame.BorderSizePixel = 0
-    SearchBarFrame.Position = UDim2.new(0, 80, 0, 55)
+    SearchBarFrame.Position = UDim2.new(0, 80, 0, 55) -- Position ajustée
     SearchBarFrame.Size = UDim2.new(1, -90, 0, 0)
     SearchBarFrame.Visible = false
     SearchBarFrame.ClipsDescendants = true
@@ -574,24 +484,23 @@ function SoroniceLib:CreateWindow(Config)
     UserInputService.InputBegan:Connect(function(input)
         if SearchOpen and input.UserInputType == Enum.UserInputType.MouseButton1 then
             local mousePos = UserInputService:GetMouseLocation()
-            local sAbs = SearchBarFrame.AbsolutePosition
-            local sSize = SearchBarFrame.AbsoluteSize
-            local bAbs = SearchBtn.AbsolutePosition
-            local bSize = SearchBtn.AbsoluteSize
-
-            if not (mousePos.X >= sAbs.X and mousePos.X <= sAbs.X + sSize.X and mousePos.Y >= sAbs.Y - 36 and mousePos.Y <= sAbs.Y + sSize.Y) then
-                 if not (mousePos.X >= bAbs.X and mousePos.X <= bAbs.X + bSize.X and mousePos.Y >= bAbs.Y - 36 and mousePos.Y <= bAbs.Y + bSize.Y) then
-                    ToggleSearch()
-                end
+            local searchAbsPos = SearchBarFrame.AbsolutePosition
+            local searchAbsSize = SearchBarFrame.AbsoluteSize
+            -- Pas de fermeture automatique si on clique dessus, logique simple
+            if not (mousePos.X >= searchAbsPos.X and mousePos.X <= searchAbsPos.X + searchAbsSize.X and mousePos.Y >= searchAbsPos.Y and mousePos.Y <= searchAbsPos.Y + searchAbsSize.Y) then
+                 -- Si on clique en dehors
+                 ToggleSearch()
             end
         end
     end)
 
     -- [DRAGGING SUR LA TOPBAR]
+    -- On doit s'assurer que le drag ne se lance pas si on clique sur un bouton de la TopBar
 	local dragging, dragInput, dragStart, startPos
 	TopBar.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             local overButton = false
+            -- Vérif simple si on est sur le container de droite (boutons)
             if input.Position.X > RightContainer.AbsolutePosition.X then overButton = true end
             
             if not overButton then
@@ -618,14 +527,12 @@ function SoroniceLib:CreateWindow(Config)
 		end
 	end)
 
-    -- [ CORRECTION ESPACE VIDE ICI : REAJUSTEMENT SIDEBAR & CONTENT ] --
 	local Sidebar = Instance.new("Frame")
 	Sidebar.Parent = MainFrame
 	Sidebar.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 	Sidebar.BackgroundTransparency = 0.5
-    -- Sidebar descend un peu plus bas car le header est plus grand (50px)
-	Sidebar.Position = UDim2.new(0, 10, 0, 55) 
-	Sidebar.Size = UDim2.new(0, 60, 1, -65) 
+	Sidebar.Position = UDim2.new(0, 10, 0, 60) -- Décalé vers le bas à cause du nouveau Header
+	Sidebar.Size = UDim2.new(0, 60, 1, -70) 
     Sidebar.ClipsDescendants = true 
 	local SidebarCorner = Instance.new("UICorner")
 	SidebarCorner.CornerRadius = UDim.new(0, 8)
@@ -649,13 +556,11 @@ function SoroniceLib:CreateWindow(Config)
 	local ContentContainer = Instance.new("Frame")
 	ContentContainer.Parent = MainFrame
 	ContentContainer.BackgroundTransparency = 1
-    -- Le Content Container doit suivre la sidebar pour éviter le vide
-	ContentContainer.Position = UDim2.new(0, 80, 0, 55)
-    
+	ContentContainer.Position = UDim2.new(0, 80, 0, 60) -- Décalé vers le bas
     if IsMobile then
-        ContentContainer.Size = UDim2.new(0, 310, 0, 215)
+        ContentContainer.Size = UDim2.new(0, 310, 0, 200)
     else
-	    ContentContainer.Size = UDim2.new(0, 460, 0, 305)
+	    ContentContainer.Size = UDim2.new(0, 460, 0, 290)
     end
     ContentContainer.ClipsDescendants = true 
 
@@ -876,7 +781,6 @@ function SoroniceLib:CreateWindow(Config)
                         end
                     end
                 end)
-                
                 HueBar.InputBegan:Connect(function(input) if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then draggingHue=true end end)
                 SVBox.InputBegan:Connect(function(input) if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then draggingSV=true end end)
                 UserInputService.InputEnded:Connect(function(input) if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then draggingHue=false; draggingSV=false end end)
@@ -892,6 +796,7 @@ function SoroniceLib:CreateWindow(Config)
                  SVBox.Active = false; HueBar.Active = false
             end
         
+        -- [NOUVEL ÉLÉMENT : MENU DÉROULANT (DROPDOWN)]
         elseif Type == "Dropdown" then
             local DropdownFrame = Instance.new("Frame", Page)
             DropdownFrame.BackgroundColor3 = Color3.fromRGB(30,30,30); DropdownFrame.Size = UDim2.new(1, -10, 0, 35) 
@@ -904,6 +809,7 @@ function SoroniceLib:CreateWindow(Config)
             local Options = Config.Options or {}
             local CurrentOption = Config.CurrentOption or Options[1] or "Sélectionner..."
             
+            -- Bouton Principal
             local MainBtn = Instance.new("TextButton", DropdownFrame)
             MainBtn.BackgroundTransparency = 1; MainBtn.Size = UDim2.new(1, 0, 0, 35)
             MainBtn.Font = Enum.Font.SourceSans; MainBtn.Text = "  " .. Config.Name .. ": " .. CurrentOption
@@ -913,11 +819,13 @@ function SoroniceLib:CreateWindow(Config)
             ArrowIcon.BackgroundTransparency = 1; ArrowIcon.Position = UDim2.new(1, -30, 0, 7); ArrowIcon.Size = UDim2.new(0, 20, 0, 20)
             ArrowIcon.Image = "rbxassetid://6034818372"
 
+            -- Conteneur des options
             local OptionsContainer = Instance.new("Frame", DropdownFrame)
             OptionsContainer.BackgroundTransparency = 1; OptionsContainer.Position = UDim2.new(0, 0, 0, 35)
             OptionsContainer.Size = UDim2.new(1, 0, 0, 0); OptionsContainer.Visible = false
             local OptionsLayout = Instance.new("UIListLayout", OptionsContainer); OptionsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
+            -- Création des boutons d'option
             for i, option in ipairs(Options) do
                 local OptBtn = Instance.new("TextButton", OptionsContainer)
                 OptBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35); OptBtn.Size = UDim2.new(1, 0, 0, 30)
@@ -927,6 +835,7 @@ function SoroniceLib:CreateWindow(Config)
                     CurrentOption = option
                     MainBtn.Text = "  " .. Config.Name .. ": " .. CurrentOption
                     if Config.Callback then Config.Callback(CurrentOption) end
+                    -- Fermer le dropdown après sélection
                     DropdownOpen = false
                     TweenService:Create(ArrowIcon, TweenInfo.new(0.2), {Rotation = 0}):Play()
                     local closeT = TweenService:Create(DropdownFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(1, -10, 0, 35)})
@@ -974,6 +883,7 @@ function SoroniceLib:CreateWindow(Config)
 			TabBtn.Text = string.sub(TabName, 1, 1); TabBtn.TextColor3 = Color3.new(0.8,0.8,0.8); TabBtn.TextSize=20; TabBtn.Font=Enum.Font.SourceSansBold
 		end
 
+        -- [APPLY LOCK ON TAB BUTTON]
         local IsButtonLocked = false
         if LockConfig and LockConfig.Locked then
              if LockConfig.LockMode ~= "Frame" then 
@@ -991,13 +901,16 @@ function SoroniceLib:CreateWindow(Config)
         PageLayout.Padding = UDim.new(0,8)
         PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
+        -- [APPLY LOCK ON PAGE CONTENT]
         if LockConfig and LockConfig.Locked and LockConfig.LockMode == "Frame" then 
             ApplyLock(Page, LockConfig) 
         end
 
 		TabBtn.MouseButton1Click:Connect(function()
             if IsButtonLocked then return end
+
             if SearchOpen then ToggleSearch() end
+
 			for _,v in pairs(ContentContainer:GetChildren()) do v.Visible=false end
 			Page.Visible=true
             TweenService:Create(SettingsBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0,0,0)}):Play()
@@ -1010,11 +923,13 @@ function SoroniceLib:CreateWindow(Config)
         function TabFunctions:CreateColorPicker(Config) CreateElement(Page, "ColorPicker", Config) end 
         function TabFunctions:CreateSection(Text) CreateElement(Page, "Section", {Text=Text}) end
         function TabFunctions:CreateLabel(Text) CreateElement(Page, "Label", {Text=Text}) end
-        function TabFunctions:CreateDropdown(Config) CreateElement(Page, "Dropdown", Config) end
+        function TabFunctions:CreateDropdown(Config) CreateElement(Page, "Dropdown", Config) end -- [AJOUT FONCTION DROPDOWN]
         
         function TabFunctions:CreateSlider(Config)
              local SliderFrame = Instance.new("Frame", Page); SliderFrame.BackgroundTransparency=1; SliderFrame.Size=UDim2.new(1,-10,0,50)
+             -- AJOUT ATTRIBUT POUR RECHERCHE
              SliderFrame:SetAttribute("SearchName", string.lower(Config.Name))
+
              local Locked = ApplyLock(SliderFrame, Config)
              local Label = Instance.new("TextLabel", SliderFrame); Label.BackgroundTransparency=1; Label.Position=UDim2.new(0,10,0,0); Label.Size=UDim2.new(1,0,0,20); Label.Text=Config.Name; Label.TextColor3=Color3.new(1,1,1); Label.TextXAlignment=Enum.TextXAlignment.Left; Label.Font=Enum.Font.SourceSans; Label.TextSize=16
              local ValLabel = Instance.new("TextLabel", SliderFrame); ValLabel.BackgroundTransparency=1; ValLabel.Position=UDim2.new(1,-60,0,0); ValLabel.Size=UDim2.new(0,50,0,20); ValLabel.TextColor3=Color3.new(1,1,1); ValLabel.TextXAlignment=Enum.TextXAlignment.Right; ValLabel.Font=Enum.Font.SourceSansBold; ValLabel.TextSize=16
