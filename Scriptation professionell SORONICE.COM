@@ -1,4 +1,5 @@
--- [[ SORONICE UI LIBRARY - V7.5 (VERSION ÉTENDUE - HEADER PRO + STATS + DROPDOWN) ]] --
+-- [[ SORONICE UI LIBRARY - V7.5 (VERSION LONGUE / ÉTENDUE / NON-COMPRESSÉE) ]] --
+-- [[ INCLUS : HEADER PRO, STATS (FPS/PING/DEVICE), DROPDOWN, RECHERCHE, CADENAS ]] --
 
 local SoroniceLib = {}
 
@@ -335,12 +336,15 @@ function SoroniceLib:CreateWindow(Config)
     TopBar.ZIndex = 10
 
     -- [ HEADER : PARTIE GAUCHE (Logo + Titre) ] --
-    local LeftContainer = Instance.new("Frame", TopBar)
+    local LeftContainer = Instance.new("Frame")
+    LeftContainer.Name = "LeftContainer"
+    LeftContainer.Parent = TopBar
     LeftContainer.BackgroundTransparency = 1
     LeftContainer.Position = UDim2.new(0, 10, 0, 0)
     LeftContainer.Size = UDim2.new(0.4, 0, 1, 0)
     
-    local LeftLayout = Instance.new("UIListLayout", LeftContainer)
+    local LeftLayout = Instance.new("UIListLayout")
+    LeftLayout.Parent = LeftContainer
     LeftLayout.FillDirection = Enum.FillDirection.Horizontal
     LeftLayout.SortOrder = Enum.SortOrder.LayoutOrder
     LeftLayout.Padding = UDim.new(0, 10)
@@ -348,7 +352,8 @@ function SoroniceLib:CreateWindow(Config)
 
     -- LOGO DE MARQUE (Si configuré)
     if BrandLogoId ~= "" then
-        local BrandLogo = Instance.new("ImageLabel", LeftContainer)
+        local BrandLogo = Instance.new("ImageLabel")
+        BrandLogo.Parent = LeftContainer
         BrandLogo.Size = UDim2.new(0, 35, 0, 35)
         BrandLogo.BackgroundTransparency = 1
         BrandLogo.Image = "rbxassetid://" .. BrandLogoId
@@ -356,12 +361,14 @@ function SoroniceLib:CreateWindow(Config)
         BrandLogo.LayoutOrder = 1
     end
 
-    local TextVerticalContainer = Instance.new("Frame", LeftContainer)
+    local TextVerticalContainer = Instance.new("Frame")
+    TextVerticalContainer.Parent = LeftContainer
     TextVerticalContainer.BackgroundTransparency = 1
     TextVerticalContainer.Size = UDim2.new(0, 200, 0, 38)
     TextVerticalContainer.LayoutOrder = 2
 
-	local TitleLabel = Instance.new("TextLabel", TextVerticalContainer)
+	local TitleLabel = Instance.new("TextLabel")
+    TitleLabel.Parent = TextVerticalContainer
 	TitleLabel.BackgroundTransparency = 1
 	TitleLabel.Size = UDim2.new(1, 0, 0.6, 0)
 	TitleLabel.Font = Enum.Font.FredokaOne
@@ -370,7 +377,8 @@ function SoroniceLib:CreateWindow(Config)
 	TitleLabel.TextSize = 18
 	TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-    local GameLabel = Instance.new("TextLabel", TextVerticalContainer)
+    local GameLabel = Instance.new("TextLabel")
+    GameLabel.Parent = TextVerticalContainer
     GameLabel.BackgroundTransparency = 1
     GameLabel.Position = UDim2.new(0,0,0.6,0)
     GameLabel.Size = UDim2.new(1, 0, 0.4, 0)
@@ -386,13 +394,16 @@ function SoroniceLib:CreateWindow(Config)
     end)
 
     -- [ HEADER : PARTIE DROITE (Stats + Boutons) ] --
-    local RightContainer = Instance.new("Frame", TopBar)
+    local RightContainer = Instance.new("Frame")
+    RightContainer.Name = "RightContainer"
+    RightContainer.Parent = TopBar
     RightContainer.BackgroundTransparency = 1
     RightContainer.AnchorPoint = Vector2.new(1, 0)
     RightContainer.Position = UDim2.new(1, -10, 0, 0)
     RightContainer.Size = UDim2.new(0.6, 0, 1, 0)
 
-    local RightLayout = Instance.new("UIListLayout", RightContainer)
+    local RightLayout = Instance.new("UIListLayout")
+    RightLayout.Parent = RightContainer
     RightLayout.FillDirection = Enum.FillDirection.Horizontal
     RightLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
     RightLayout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -401,14 +412,19 @@ function SoroniceLib:CreateWindow(Config)
 
     -- FONCTION POUR CRÉER UN BADGE DE STATS
     local function CreateStatBadge(Text, Color, Order)
-        local Badge = Instance.new("Frame", RightContainer)
+        local Badge = Instance.new("Frame")
+        Badge.Parent = RightContainer
         Badge.BackgroundColor3 = Color or Settings.StatsColor
         Badge.Size = UDim2.new(0, 0, 0, 24)
         Badge.AutomaticSize = Enum.AutomaticSize.X
         Badge.LayoutOrder = Order
-        Instance.new("UICorner", Badge).CornerRadius = UDim.new(0, 6)
         
-        local Lbl = Instance.new("TextLabel", Badge)
+        local BadgeCorner = Instance.new("UICorner")
+        BadgeCorner.Parent = Badge
+        BadgeCorner.CornerRadius = UDim.new(0, 6)
+        
+        local Lbl = Instance.new("TextLabel")
+        Lbl.Parent = Badge
         Lbl.BackgroundTransparency = 1
         Lbl.Size = UDim2.new(1, 0, 1, 0)
         Lbl.Font = Enum.Font.GothamBold
@@ -464,15 +480,17 @@ function SoroniceLib:CreateWindow(Config)
     end
 
     -- BOUTONS DE CONTRÔLE (Loupe, Minimize, Close)
-    local SearchBtn = Instance.new("ImageButton", RightContainer)
+    local SearchBtn = Instance.new("ImageButton")
     SearchBtn.Name = "SearchButton"
+    SearchBtn.Parent = RightContainer
     SearchBtn.BackgroundTransparency = 1
     SearchBtn.Size = UDim2.new(0, 28, 0, 28)
     SearchBtn.Image = "rbxassetid://76095216033555" 
     SearchBtn.ImageColor3 = Settings.SubTextColor
     SearchBtn.LayoutOrder = 10
 
-	local MinBtn = Instance.new("TextButton", RightContainer)
+	local MinBtn = Instance.new("TextButton")
+    MinBtn.Parent = RightContainer
 	MinBtn.Name = "Minimize"
 	MinBtn.BackgroundTransparency = 1
 	MinBtn.Size = UDim2.new(0, 28, 0, 28)
@@ -482,7 +500,8 @@ function SoroniceLib:CreateWindow(Config)
 	MinBtn.TextSize = 24
     MinBtn.LayoutOrder = 11
     
-	local CloseBtn = Instance.new("TextButton", RightContainer)
+	local CloseBtn = Instance.new("TextButton")
+    CloseBtn.Parent = RightContainer
 	CloseBtn.Name = "Close"
 	CloseBtn.BackgroundTransparency = 1
 	CloseBtn.Size = UDim2.new(0, 28, 0, 28)
@@ -590,7 +609,10 @@ function SoroniceLib:CreateWindow(Config)
     SearchBarFrame.Visible = false
     SearchBarFrame.ClipsDescendants = true
     SearchBarFrame.ZIndex = 5
-    Instance.new("UICorner", SearchBarFrame).CornerRadius = UDim.new(0, 6)
+    
+    local SearchBarCorner = Instance.new("UICorner")
+    SearchBarCorner.Parent = SearchBarFrame
+    SearchBarCorner.CornerRadius = UDim.new(0, 6)
 
     local SearchInput = Instance.new("TextBox")
     SearchInput.Parent = SearchBarFrame
@@ -760,13 +782,15 @@ function SoroniceLib:CreateWindow(Config)
         
         -- [ BOUTON SIMPLE ] --
         if Type == "Button" then
-            local BtnFrame = Instance.new("Frame", Page)
+            local BtnFrame = Instance.new("Frame")
+            BtnFrame.Parent = Page
 			BtnFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
             BtnFrame.Size=UDim2.new(1,-10,0,35)
             Instance.new("UICorner", BtnFrame).CornerRadius = UDim.new(0,6)
             BtnFrame:SetAttribute("SearchName", string.lower(Config.Name))
 
-			local Btn = Instance.new("TextButton", BtnFrame)
+			local Btn = Instance.new("TextButton")
+            Btn.Parent = BtnFrame
 			Btn.BackgroundTransparency=1
             Btn.Size=UDim2.new(1,0,1,0)
             Btn.Font=Enum.Font.Gotham
@@ -790,12 +814,14 @@ function SoroniceLib:CreateWindow(Config)
 
         -- [ BOUTON TOGGLE / BASCULE ] --
         elseif Type == "Toggle" then
-            local ToggleFrame = Instance.new("Frame", Page)
+            local ToggleFrame = Instance.new("Frame")
+            ToggleFrame.Parent = Page
             ToggleFrame.BackgroundTransparency=1
             ToggleFrame.Size=UDim2.new(1,-10,0,35)
             ToggleFrame:SetAttribute("SearchName", string.lower(Config.Name))
 
-            local Label = Instance.new("TextLabel", ToggleFrame)
+            local Label = Instance.new("TextLabel")
+            Label.Parent = ToggleFrame
             Label.BackgroundTransparency=1
             Label.Size=UDim2.new(0.7,0,1,0)
             Label.Position=UDim2.new(0,10,0,0)
@@ -805,13 +831,15 @@ function SoroniceLib:CreateWindow(Config)
             Label.TextSize=14
             Label.Font=Enum.Font.Gotham
 
-            local SwitchBg = Instance.new("Frame", ToggleFrame)
+            local SwitchBg = Instance.new("Frame")
+            SwitchBg.Parent = ToggleFrame
             SwitchBg.BackgroundColor3=Color3.fromRGB(40,40,40)
             SwitchBg.Position=UDim2.new(1,-60,0.5,-12)
             SwitchBg.Size=UDim2.new(0,50,0,24)
             Instance.new("UICorner", SwitchBg).CornerRadius=UDim.new(1,0)
 
-            local Knob = Instance.new("Frame", SwitchBg)
+            local Knob = Instance.new("Frame")
+            Knob.Parent = SwitchBg
             Knob.BackgroundColor3=Settings.TextColor
             Knob.Position=UDim2.new(0,2,0.5,-10)
             Knob.Size=UDim2.new(0,20,0,20)
@@ -832,7 +860,8 @@ function SoroniceLib:CreateWindow(Config)
             end
             if Toggled then Update() end
             
-            local Btn = Instance.new("TextButton", SwitchBg)
+            local Btn = Instance.new("TextButton")
+            Btn.Parent = SwitchBg
             Btn.BackgroundTransparency=1
             Btn.Size=UDim2.new(1,0,1,0)
             Btn.Text=""
@@ -845,13 +874,15 @@ function SoroniceLib:CreateWindow(Config)
 
         -- [ RACCOURCI CLAVIER (KEYBIND) ] --
         elseif Type == "Keybind" then
-            local BindFrame = Instance.new("Frame", Page)
+            local BindFrame = Instance.new("Frame")
+            BindFrame.Parent = Page
             BindFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
             BindFrame.Size=UDim2.new(1,-10,0,35)
             Instance.new("UICorner", BindFrame).CornerRadius = UDim.new(0,6)
             BindFrame:SetAttribute("SearchName", string.lower(Config.Name))
 
-            local Label = Instance.new("TextLabel", BindFrame)
+            local Label = Instance.new("TextLabel")
+            Label.Parent = BindFrame
             Label.BackgroundTransparency=1
             Label.Size=UDim2.new(0.7,0,1,0)
             Label.Position=UDim2.new(0,10,0,0)
@@ -861,7 +892,8 @@ function SoroniceLib:CreateWindow(Config)
             Label.TextSize=14
             Label.Font=Enum.Font.Gotham
 
-            local BindBtn = Instance.new("TextButton", BindFrame)
+            local BindBtn = Instance.new("TextButton")
+            BindBtn.Parent = BindFrame
             BindBtn.BackgroundColor3 = Color3.fromRGB(40,40,40)
             BindBtn.Position=UDim2.new(1,-80,0.5,-12)
             BindBtn.Size=UDim2.new(0,70,0,24)
@@ -886,12 +918,14 @@ function SoroniceLib:CreateWindow(Config)
 
         -- [ TEXTE (LABEL) ] --
         elseif Type == "Label" then
-            local LabelFrame = Instance.new("Frame", Page)
+            local LabelFrame = Instance.new("Frame")
+            LabelFrame.Parent = Page
             LabelFrame.BackgroundTransparency=1
             LabelFrame.Size=UDim2.new(1,-10,0,25)
             LabelFrame:SetAttribute("SearchName", string.lower(Config.Text))
 
-            local Txt = Instance.new("TextLabel", LabelFrame)
+            local Txt = Instance.new("TextLabel")
+            Txt.Parent = LabelFrame
             Txt.BackgroundTransparency=1
             Txt.Size=UDim2.new(1,0,1,0)
             Txt.Position=UDim2.new(0,10,0,0)
@@ -903,12 +937,14 @@ function SoroniceLib:CreateWindow(Config)
 
         -- [ SECTION ] --
         elseif Type == "Section" then
-            local SectionFrame = Instance.new("Frame", Page)
+            local SectionFrame = Instance.new("Frame")
+            SectionFrame.Parent = Page
             SectionFrame.BackgroundTransparency=1
             SectionFrame.Size=UDim2.new(1,-10,0,30)
             SectionFrame:SetAttribute("SearchName", string.lower(Config.Text))
 
-            local Txt = Instance.new("TextLabel", SectionFrame)
+            local Txt = Instance.new("TextLabel")
+            Txt.Parent = SectionFrame
             Txt.BackgroundTransparency=1
             Txt.Size=UDim2.new(1,0,1,0)
             Txt.Position=UDim2.new(0,10,0,0)
@@ -920,7 +956,8 @@ function SoroniceLib:CreateWindow(Config)
         
         -- [ SÉLECTEUR DE COULEUR (COLOR PICKER) ] --
         elseif Type == "ColorPicker" then
-            local ColorFrame = Instance.new("Frame", Page)
+            local ColorFrame = Instance.new("Frame")
+            ColorFrame.Parent = Page
             ColorFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
             ColorFrame.Size = UDim2.new(1, -10, 0, 160)
             Instance.new("UICorner", ColorFrame).CornerRadius = UDim.new(0, 6)
@@ -928,7 +965,8 @@ function SoroniceLib:CreateWindow(Config)
 
             local Locked = ApplyLock(ColorFrame, Config)
 
-            local Label = Instance.new("TextLabel", ColorFrame)
+            local Label = Instance.new("TextLabel")
+            Label.Parent = ColorFrame
             Label.BackgroundTransparency=1
             Label.Position=UDim2.new(0,10,0,5)
             Label.Size=UDim2.new(1,0,0,20)
@@ -938,39 +976,46 @@ function SoroniceLib:CreateWindow(Config)
             Label.Font=Enum.Font.GothamBold
             Label.TextSize=14
 
-            local Preview = Instance.new("Frame", ColorFrame)
+            local Preview = Instance.new("Frame")
+            Preview.Parent = ColorFrame
             Preview.Position=UDim2.new(0,10,0,30)
             Preview.Size=UDim2.new(0,30,0,30)
             Preview.BackgroundColor3=Config.Color or Color3.new(1,1,1)
             Instance.new("UICorner", Preview).CornerRadius = UDim.new(0, 4)
 
-            local SVBox = Instance.new("TextButton", ColorFrame)
+            local SVBox = Instance.new("TextButton")
+            SVBox.Parent = ColorFrame
             SVBox.Position=UDim2.new(0, 60, 0, 30)
             SVBox.Size=UDim2.new(0, 150, 0, 100)
             SVBox.BackgroundColor3=Color3.new(1,0,0)
             SVBox.Text=""
             
-            local SVGrad = Instance.new("UIGradient", SVBox)
+            local SVGrad = Instance.new("UIGradient")
+            SVGrad.Parent = SVBox
             SVGrad.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.new(1,1,1)), ColorSequenceKeypoint.new(1, Color3.new(1,0,0))}
             
-            local SVBlack = Instance.new("ImageLabel", SVBox)
+            local SVBlack = Instance.new("ImageLabel")
+            SVBlack.Parent = SVBox
             SVBlack.Size=UDim2.new(1,0,1,0)
             SVBlack.Image="rbxassetid://156579757"
             SVBlack.BackgroundTransparency=1
             
-            local HueBar = Instance.new("TextButton", ColorFrame)
+            local HueBar = Instance.new("TextButton")
+            HueBar.Parent = ColorFrame
             HueBar.Position=UDim2.new(0, 60, 0, 135)
             HueBar.Size=UDim2.new(0, 150, 0, 15)
             HueBar.Text=""
             
-            local HueGrad = Instance.new("UIGradient", HueBar)
+            local HueGrad = Instance.new("UIGradient")
+            HueGrad.Parent = HueBar
             HueGrad.Color = ColorSequence.new{
                 ColorSequenceKeypoint.new(0, Color3.new(1,0,0)), ColorSequenceKeypoint.new(0.167, Color3.new(1,1,0)), ColorSequenceKeypoint.new(0.333, Color3.new(0,1,0)),
                 ColorSequenceKeypoint.new(0.5, Color3.new(0,1,1)), ColorSequenceKeypoint.new(0.667, Color3.new(0,0,1)), ColorSequenceKeypoint.new(0.833, Color3.new(1,0,1)), ColorSequenceKeypoint.new(1, Color3.new(1,0,0))
             }
 
             local function CreateInput(Placeholder, XOffset)
-                local Box = Instance.new("TextBox", ColorFrame)
+                local Box = Instance.new("TextBox")
+                Box.Parent = ColorFrame
                 Box.BackgroundColor3=Color3.fromRGB(40,40,40)
                 Box.Position=UDim2.new(0, 220, 0, XOffset)
                 Box.Size=UDim2.new(0, 40, 0, 25)
@@ -987,7 +1032,8 @@ function SoroniceLib:CreateWindow(Config)
             local GBox = CreateInput("G", 60)
             local BBox = CreateInput("B", 90)
             
-            local HexBox = Instance.new("TextBox", ColorFrame)
+            local HexBox = Instance.new("TextBox")
+            HexBox.Parent = ColorFrame
             HexBox.BackgroundColor3=Color3.fromRGB(40,40,40)
             HexBox.Position=UDim2.new(0, 220, 0, 120)
             HexBox.Size=UDim2.new(0, 60, 0, 25)
@@ -1047,7 +1093,8 @@ function SoroniceLib:CreateWindow(Config)
         
         -- [ MENU DÉROULANT (DROPDOWN) ] --
         elseif Type == "Dropdown" then
-            local DropdownFrame = Instance.new("Frame", Page)
+            local DropdownFrame = Instance.new("Frame")
+            DropdownFrame.Parent = Page
             DropdownFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
             DropdownFrame.Size = UDim2.new(1, -10, 0, 35) 
             DropdownFrame.ClipsDescendants = true
@@ -1059,7 +1106,8 @@ function SoroniceLib:CreateWindow(Config)
             local Options = Config.Options or {}
             local CurrentOption = Config.CurrentOption or Options[1] or "Sélectionner..."
             
-            local MainBtn = Instance.new("TextButton", DropdownFrame)
+            local MainBtn = Instance.new("TextButton")
+            MainBtn.Parent = DropdownFrame
             MainBtn.BackgroundTransparency = 1
             MainBtn.Size = UDim2.new(1, 0, 0, 35)
             MainBtn.Font = Enum.Font.SourceSans
@@ -1068,23 +1116,27 @@ function SoroniceLib:CreateWindow(Config)
             MainBtn.TextSize = 16
             MainBtn.TextXAlignment = Enum.TextXAlignment.Left
             
-            local ArrowIcon = Instance.new("ImageLabel", MainBtn)
+            local ArrowIcon = Instance.new("ImageLabel")
+            ArrowIcon.Parent = MainBtn
             ArrowIcon.BackgroundTransparency = 1
             ArrowIcon.Position = UDim2.new(1, -30, 0, 7)
             ArrowIcon.Size = UDim2.new(0, 20, 0, 20)
             ArrowIcon.Image = "rbxassetid://6034818372"
 
-            local OptionsContainer = Instance.new("Frame", DropdownFrame)
+            local OptionsContainer = Instance.new("Frame")
+            OptionsContainer.Parent = DropdownFrame
             OptionsContainer.BackgroundTransparency = 1
             OptionsContainer.Position = UDim2.new(0, 0, 0, 35)
             OptionsContainer.Size = UDim2.new(1, 0, 0, 0)
             OptionsContainer.Visible = false
             
-            local OptionsLayout = Instance.new("UIListLayout", OptionsContainer)
+            local OptionsLayout = Instance.new("UIListLayout")
+            OptionsLayout.Parent = OptionsContainer
             OptionsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
             for i, option in ipairs(Options) do
-                local OptBtn = Instance.new("TextButton", OptionsContainer)
+                local OptBtn = Instance.new("TextButton")
+                OptBtn.Parent = OptionsContainer
                 OptBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
                 OptBtn.Size = UDim2.new(1, 0, 0, 30)
                 OptBtn.Font = Enum.Font.SourceSans
@@ -1142,14 +1194,16 @@ function SoroniceLib:CreateWindow(Config)
     end
 
 	function WindowFunctions:CreateTab(TabName, TabImageId, LockConfig) 
-		local TabBtn = Instance.new("TextButton", SidebarScroll) 
+		local TabBtn = Instance.new("TextButton")
+        TabBtn.Parent = SidebarScroll
 		TabBtn.BackgroundColor3 = Color3.new(0,0,0)
         TabBtn.BackgroundTransparency=0.5
         TabBtn.Size=UDim2.new(0,45,0,45)
         TabBtn.Text=""
         Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0,8)
 		if TabImageId and TabImageId ~= 0 then
-			local Icon = Instance.new("ImageLabel", TabBtn)
+			local Icon = Instance.new("ImageLabel")
+            Icon.Parent = TabBtn
             Icon.BackgroundTransparency=1
             Icon.Position=UDim2.new(0,5,0,5)
             Icon.Size=UDim2.new(0,35,0,35)
@@ -1168,7 +1222,8 @@ function SoroniceLib:CreateWindow(Config)
              end
         end
 
-		local Page = Instance.new("ScrollingFrame", ContentContainer)
+		local Page = Instance.new("ScrollingFrame")
+        Page.Parent = ContentContainer
         Page.BackgroundTransparency=1
         Page.Size=UDim2.new(1,0,1,0)
         Page.ScrollBarThickness=6
@@ -1177,7 +1232,8 @@ function SoroniceLib:CreateWindow(Config)
         Page.CanvasSize = UDim2.new(0,0,0,0)
         Page.VerticalScrollBarInset = Enum.ScrollBarInset.None
 
-        local PageLayout = Instance.new("UIListLayout", Page)
+        local PageLayout = Instance.new("UIListLayout")
+        PageLayout.Parent = Page
         PageLayout.Padding = UDim.new(0,8)
         PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
@@ -1203,14 +1259,16 @@ function SoroniceLib:CreateWindow(Config)
         function TabFunctions:CreateDropdown(Config) CreateElement(Page, "Dropdown", Config) end
         
         function TabFunctions:CreateSlider(Config)
-             local SliderFrame = Instance.new("Frame", Page)
+             local SliderFrame = Instance.new("Frame")
+             SliderFrame.Parent = Page
              SliderFrame.BackgroundTransparency=1
              SliderFrame.Size=UDim2.new(1,-10,0,50)
              SliderFrame:SetAttribute("SearchName", string.lower(Config.Name))
 
              local Locked = ApplyLock(SliderFrame, Config)
              
-             local Label = Instance.new("TextLabel", SliderFrame)
+             local Label = Instance.new("TextLabel")
+             Label.Parent = SliderFrame
              Label.BackgroundTransparency=1
              Label.Position=UDim2.new(0,10,0,0)
              Label.Size=UDim2.new(1,0,0,20)
@@ -1220,7 +1278,8 @@ function SoroniceLib:CreateWindow(Config)
              Label.Font=Enum.Font.Gotham
              Label.TextSize=14
 
-             local ValLabel = Instance.new("TextLabel", SliderFrame)
+             local ValLabel = Instance.new("TextLabel")
+             ValLabel.Parent = SliderFrame
              ValLabel.BackgroundTransparency=1
              ValLabel.Position=UDim2.new(1,-60,0,0)
              ValLabel.Size=UDim2.new(0,50,0,20)
@@ -1229,13 +1288,15 @@ function SoroniceLib:CreateWindow(Config)
              ValLabel.Font=Enum.Font.GothamBold
              ValLabel.TextSize=14
 
-             local Bar = Instance.new("Frame", SliderFrame)
+             local Bar = Instance.new("Frame")
+             Bar.Parent = SliderFrame
              Bar.BackgroundColor3=Color3.fromRGB(10,10,10)
              Bar.Position=UDim2.new(0,10,0,25)
              Bar.Size=UDim2.new(1,-20,0,10)
              Instance.new("UICorner", Bar).CornerRadius=UDim.new(1,0)
 
-             local Knob = Instance.new("TextButton", Bar)
+             local Knob = Instance.new("TextButton")
+             Knob.Parent = Bar
              Knob.BackgroundColor3=Settings.AccentColor
              Knob.Size=UDim2.new(0,20,0,20)
              Knob.AnchorPoint=Vector2.new(0.5,0.5)
