@@ -1,4 +1,4 @@
--- [[ SORONICE UI LIBRARY - V5.4 (TAB SWITCH FIX + ANIMATIONS + SAFE STOP) ]] --
+-- [[ SORONICE UI LIBRARY - V6.0 (SEARCH BAR UPDATE) ]] --
 
 local SoroniceLib = {}
 local UserInputService = game:GetService("UserInputService")
@@ -21,7 +21,7 @@ local Settings = {
 	AccentColor = Color3.fromRGB(0, 54, 203)
 }
 
--- --- [ TABLEAU DES ÉLÉMENTS ACTIFS (POUR STOPPER A LA FERMETURE) ] ---
+-- --- [ TABLEAU DES ÉLÉMENTS ACTIFS ] ---
 local ActiveToggles = {} 
 
 -- --- [ SYSTÈME AFK ] ---
@@ -227,8 +227,6 @@ function SoroniceLib:CreateWindow(Config)
 	MainFrame.Parent = ScreenGui
 	MainFrame.BackgroundColor3 = Settings.ThemeColor
 	MainFrame.BackgroundTransparency = 0.2
-    
-    -- [ANIMATION CENTER]
     MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
     
     local TargetSize
@@ -254,6 +252,7 @@ function SoroniceLib:CreateWindow(Config)
 	TopBar.BackgroundTransparency = 1 
 	TopBar.Size = UDim2.new(1, 0, 0, 40)
     TopBar.Position = UDim2.new(0,0,0,0)
+    TopBar.ZIndex = 10
 
 	local dragging, dragInput, dragStart, startPos
 	TopBar.InputBegan:Connect(function(input)
@@ -290,8 +289,17 @@ function SoroniceLib:CreateWindow(Config)
 	TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 	TitleLabel.TextSize = 22
 	TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    
+    -- [BOUTON DE RECHERCHE (LOUPE)]
+    local SearchBtn = Instance.new("ImageButton")
+    SearchBtn.Name = "SearchButton"
+    SearchBtn.Parent = TopBar
+    SearchBtn.BackgroundTransparency = 1
+    SearchBtn.Position = UDim2.new(1, -90, 0, 5)
+    SearchBtn.Size = UDim2.new(0, 30, 0, 30)
+    SearchBtn.Image = "rbxassetid://101516465585914" -- Ton ID
+    SearchBtn.ImageColor3 = Color3.fromRGB(150, 150, 150)
 
-    -- [BOUTON MOINS AVEC ANIMATION]
 	local MinBtn = Instance.new("TextButton")
 	MinBtn.Name = "Minimize"
 	MinBtn.Parent = TopBar
@@ -312,14 +320,12 @@ function SoroniceLib:CreateWindow(Config)
         IsHidden = not IsHidden
         
         if IsHidden then
-            -- ZOOM OUT (Rétrécir)
             local closeT = TweenService:Create(MainFrame, TweenInfo.new(0.7, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(0,0,0,0)})
             closeT:Play()
             closeT.Completed:Wait()
             MainFrame.Visible = false
             if IsMobile and MobileOpenBtn then MobileOpenBtn.Visible = true end
         else
-            -- ZOOM IN (Agrandir)
             if IsMobile and MobileOpenBtn then MobileOpenBtn.Visible = false end
             MainFrame.Visible = true
             local openT = TweenService:Create(MainFrame, TweenInfo.new(0.7, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = TargetSize})
@@ -335,7 +341,6 @@ function SoroniceLib:CreateWindow(Config)
         if not IsMobile and not gameProcessed and input.KeyCode == Settings.Keybind then ToggleVisibility() end
     end)
 
-    -- [FERMETURE CROIX AVEC DÉSACTIVATION DES SCRIPTS]
 	local CloseBtn = Instance.new("TextButton")
 	CloseBtn.Name = "Close"
 	CloseBtn.Parent = TopBar
@@ -347,21 +352,83 @@ function SoroniceLib:CreateWindow(Config)
 	CloseBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 	CloseBtn.TextSize = 20
 	CloseBtn.MouseButton1Click:Connect(function() 
-        
-        -- DÉSACTIVATION DES TOGGLES (STOPPER LES LOOPS)
-        -- On envoie 'false' au callback. À TOI de gérer le reset de vitesse dans ton script avec 'else'.
         for _, ToggleData in pairs(ActiveToggles) do
             if ToggleData.Callback then
                 ToggleData.Callback(false) 
             end
         end
-        
-        -- ANIMATION DE FERMETURE
         local CloseTween = TweenService:Create(MainFrame, TweenInfo.new(0.7, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Size = UDim2.new(0,0,0,0)})
         CloseTween:Play()
         CloseTween.Completed:Wait() 
-        
         ScreenGui:Destroy() 
+    end)
+
+    -- [BARRE DE RECHERCHE (CONTAINER)]
+    local SearchBarFrame = Instance.new("Frame")
+    SearchBarFrame.Name = "SearchBar"
+    SearchBarFrame.Parent = MainFrame
+    SearchBarFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    SearchBarFrame.BorderSizePixel = 0
+    SearchBarFrame.Position = UDim2.new(0, 80, 0, 45) -- Juste sous la TopBar
+    SearchBarFrame.Size = UDim2.new(1, -90, 0, 0) -- Hauteur 0 au début (caché)
+    SearchBarFrame.Visible = false
+    SearchBarFrame.ClipsDescendants = true
+    SearchBarFrame.ZIndex = 5
+    Instance.new("UICorner", SearchBarFrame).CornerRadius = UDim.new(0, 6)
+
+    local SearchInput = Instance.new("TextBox")
+    SearchInput.Parent = SearchBarFrame
+    SearchInput.BackgroundTransparency = 1
+    SearchInput.Position = UDim2.new(0, 10, 0, 0)
+    SearchInput.Size = UDim2.new(1, -20, 1, 0)
+    SearchInput.Font = Enum.Font.SourceSans
+    SearchInput.PlaceholderText = "Rechercher..."
+    SearchInput.Text = ""
+    SearchInput.TextColor3 = Color3.new(1, 1, 1)
+    SearchInput.TextSize = 16
+    SearchInput.TextXAlignment = Enum.TextXAlignment.Left
+    SearchInput.ZIndex = 6
+
+    local SearchOpen = false
+    local isSearchAnimating = false
+
+    -- [FONCTION TOGGLE RECHERCHE (ANIMATION RAPIDE)]
+    local function ToggleSearch()
+        if isSearchAnimating then return end
+        isSearchAnimating = true
+        SearchOpen = not SearchOpen
+
+        if SearchOpen then
+            SearchBarFrame.Visible = true
+            TweenService:Create(SearchBarFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(1, -90, 0, 30)}):Play()
+            SearchInput:CaptureFocus()
+        else
+            local closeTween = TweenService:Create(SearchBarFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(1, -90, 0, 0)})
+            closeTween:Play()
+            closeTween.Completed:Wait()
+            SearchBarFrame.Visible = false
+            SearchInput.Text = "" -- Reset le texte à la fermeture
+        end
+        isSearchAnimating = false
+    end
+    SearchBtn.MouseButton1Click:Connect(ToggleSearch)
+
+    -- [FERMER LA RECHERCHE EN CLIQUANT A CÔTÉ]
+    UserInputService.InputBegan:Connect(function(input)
+        if SearchOpen and input.UserInputType == Enum.UserInputType.MouseButton1 then
+            local mousePos = UserInputService:GetMouseLocation()
+            local searchAbsPos = SearchBarFrame.AbsolutePosition
+            local searchAbsSize = SearchBarFrame.AbsoluteSize
+            local searchBtnAbsPos = SearchBtn.AbsolutePosition
+            local searchBtnAbsSize = SearchBtn.AbsoluteSize
+
+            -- Vérifie si le clic est HORS de la barre ET HORS du bouton loupe
+            if not (mousePos.X >= searchAbsPos.X and mousePos.X <= searchAbsPos.X + searchAbsSize.X and mousePos.Y >= searchAbsPos.Y - 36 and mousePos.Y <= searchAbsPos.Y + searchAbsSize.Y) then
+                 if not (mousePos.X >= searchBtnAbsPos.X and mousePos.X <= searchBtnAbsPos.X + searchBtnAbsSize.X and mousePos.Y >= searchBtnAbsPos.Y - 36 and mousePos.Y <= searchBtnAbsPos.Y + searchBtnAbsSize.Y) then
+                    ToggleSearch()
+                end
+            end
+        end
     end)
 
 	local Sidebar = Instance.new("Frame")
@@ -400,6 +467,31 @@ function SoroniceLib:CreateWindow(Config)
 	    ContentContainer.Size = UDim2.new(0, 460, 0, 290)
     end
     ContentContainer.ClipsDescendants = true 
+
+    -- [FONCTION DE FILTRAGE]
+    local function FilterItems(searchText)
+        searchText = string.lower(searchText)
+        -- Trouver la page active
+        for _, page in pairs(ContentContainer:GetChildren()) do
+            if page:IsA("ScrollingFrame") and page.Visible then
+                -- Filtrer les éléments de cette page
+                for _, element in pairs(page:GetChildren()) do
+                    if element:IsA("Frame") and element:GetAttribute("SearchName") then
+                        local itemName = element:GetAttribute("SearchName")
+                        if string.find(itemName, searchText) then
+                            element.Visible = true
+                        else
+                            element.Visible = false
+                        end
+                    end
+                end
+            end
+        end
+    end
+    SearchInput:GetPropertyChangedSignal("Text"):Connect(function()
+        FilterItems(SearchInput.Text)
+    end)
+
 
 	local SettingsBtn = Instance.new("TextButton")
 	SettingsBtn.Name = "Settings_Btn"
@@ -451,6 +543,9 @@ function SoroniceLib:CreateWindow(Config)
             local BtnFrame = Instance.new("Frame", Page)
 			BtnFrame.BackgroundColor3 = Color3.fromRGB(30,30,30); BtnFrame.Size=UDim2.new(1,-10,0,35)
             Instance.new("UICorner", BtnFrame).CornerRadius = UDim.new(0,6)
+            -- AJOUT ATTRIBUT POUR RECHERCHE
+            BtnFrame:SetAttribute("SearchName", string.lower(Config.Name))
+
 			local Btn = Instance.new("TextButton", BtnFrame)
 			Btn.BackgroundTransparency=1; Btn.Size=UDim2.new(1,0,1,0); Btn.Font=Enum.Font.SourceSans; Btn.Text="  "..Config.Name; Btn.TextColor3=Color3.new(1,1,1); Btn.TextSize=16; Btn.TextXAlignment=Enum.TextXAlignment.Left
 			
@@ -468,6 +563,9 @@ function SoroniceLib:CreateWindow(Config)
 
         elseif Type == "Toggle" then
             local ToggleFrame = Instance.new("Frame", Page); ToggleFrame.BackgroundTransparency=1; ToggleFrame.Size=UDim2.new(1,-10,0,35)
+            -- AJOUT ATTRIBUT POUR RECHERCHE
+            ToggleFrame:SetAttribute("SearchName", string.lower(Config.Name))
+
             local Label = Instance.new("TextLabel", ToggleFrame); Label.BackgroundTransparency=1; Label.Size=UDim2.new(0.7,0,1,0); Label.Position=UDim2.new(0,10,0,0); Label.Text=Config.Name; Label.TextColor3=Color3.new(1,1,1); Label.TextXAlignment=Enum.TextXAlignment.Left; Label.TextSize=16; Label.Font=Enum.Font.SourceSans
             local SwitchBg = Instance.new("Frame", ToggleFrame); SwitchBg.BackgroundColor3=Color3.fromRGB(40,40,40); SwitchBg.Position=UDim2.new(1,-60,0.5,-12); SwitchBg.Size=UDim2.new(0,50,0,24)
             Instance.new("UICorner", SwitchBg).CornerRadius=UDim.new(1,0)
@@ -478,7 +576,6 @@ function SoroniceLib:CreateWindow(Config)
 
             local Toggled = Config.CurrentValue or false
             
-            -- [ENREGISTREMENT POUR LE RESET : ON NE GARDE QUE LES TOGGLES]
             table.insert(ActiveToggles, {Callback = Config.Callback})
 
             local function Update()
@@ -502,6 +599,9 @@ function SoroniceLib:CreateWindow(Config)
             local BindFrame = Instance.new("Frame", Page)
             BindFrame.BackgroundColor3 = Color3.fromRGB(30,30,30); BindFrame.Size=UDim2.new(1,-10,0,35)
             Instance.new("UICorner", BindFrame).CornerRadius = UDim.new(0,6)
+            -- AJOUT ATTRIBUT POUR RECHERCHE
+            BindFrame:SetAttribute("SearchName", string.lower(Config.Name))
+
             local Label = Instance.new("TextLabel", BindFrame); Label.BackgroundTransparency=1; Label.Size=UDim2.new(0.7,0,1,0); Label.Position=UDim2.new(0,10,0,0); Label.Text=Config.Name; Label.TextColor3=Color3.new(1,1,1); Label.TextXAlignment=Enum.TextXAlignment.Left; Label.TextSize=16; Label.Font=Enum.Font.SourceSans
             local BindBtn = Instance.new("TextButton", BindFrame)
             BindBtn.BackgroundColor3 = Color3.fromRGB(40,40,40); BindBtn.Position=UDim2.new(1,-80,0.5,-12); BindBtn.Size=UDim2.new(0,70,0,24)
@@ -522,10 +622,14 @@ function SoroniceLib:CreateWindow(Config)
             end)
         elseif Type == "Label" then
             local LabelFrame = Instance.new("Frame", Page); LabelFrame.BackgroundTransparency=1; LabelFrame.Size=UDim2.new(1,-10,0,25)
+            -- AJOUT ATTRIBUT POUR RECHERCHE (Optionnel pour les labels, mais pratique)
+            LabelFrame:SetAttribute("SearchName", string.lower(Config.Text))
             local Txt = Instance.new("TextLabel", LabelFrame); Txt.BackgroundTransparency=1; Txt.Size=UDim2.new(1,0,1,0); Txt.Position=UDim2.new(0,10,0,0)
             Txt.Text = Config.Text; Txt.TextColor3 = Color3.new(1,1,1); Txt.TextXAlignment=Enum.TextXAlignment.Left; Txt.Font=Enum.Font.SourceSans; Txt.TextSize=16
         elseif Type == "Section" then
             local SectionFrame = Instance.new("Frame", Page); SectionFrame.BackgroundTransparency=1; SectionFrame.Size=UDim2.new(1,-10,0,30)
+             -- AJOUT ATTRIBUT POUR RECHERCHE
+            SectionFrame:SetAttribute("SearchName", string.lower(Config.Text))
             local Txt = Instance.new("TextLabel", SectionFrame); Txt.BackgroundTransparency=1; Txt.Size=UDim2.new(1,0,1,0); Txt.Position=UDim2.new(0,10,0,0)
             Txt.Text = Config.Text; Txt.TextColor3 = Settings.AccentColor; Txt.TextXAlignment=Enum.TextXAlignment.Left; Txt.Font=Enum.Font.SourceSansBold; Txt.TextSize=18
         
@@ -533,7 +637,9 @@ function SoroniceLib:CreateWindow(Config)
             local ColorFrame = Instance.new("Frame", Page)
             ColorFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30); ColorFrame.Size = UDim2.new(1, -10, 0, 160)
             Instance.new("UICorner", ColorFrame).CornerRadius = UDim.new(0, 6)
-            
+            -- AJOUT ATTRIBUT POUR RECHERCHE
+            ColorFrame:SetAttribute("SearchName", string.lower(Config.Name))
+
             local Locked = ApplyLock(ColorFrame, Config)
 
             local Label = Instance.new("TextLabel", ColorFrame); Label.BackgroundTransparency=1; Label.Position=UDim2.new(0,10,0,5); Label.Size=UDim2.new(1,0,0,20)
@@ -629,7 +735,6 @@ function SoroniceLib:CreateWindow(Config)
         -- [APPLY LOCK ON TAB BUTTON]
         local IsButtonLocked = false
         if LockConfig and LockConfig.Locked then
-             -- Si ce n'est PAS le mode Frame, alors c'est le mode Button, donc on bloque le bouton
              if LockConfig.LockMode ~= "Frame" then 
                  IsButtonLocked = ApplyLock(TabBtn, LockConfig) 
              end
@@ -651,10 +756,11 @@ function SoroniceLib:CreateWindow(Config)
         end
 
 		TabBtn.MouseButton1Click:Connect(function()
-            -- SI LE BOUTON EST BLOQUÉ, ON NE FAIT RIEN (LE CADENAS S'EN OCCUPE)
             if IsButtonLocked then return end
 
-            -- SINON, ON CHANGE DE PAGE NORMALEMENT
+            -- Reset la recherche quand on change d'onglet
+            if SearchOpen then ToggleSearch() end
+
 			for _,v in pairs(ContentContainer:GetChildren()) do v.Visible=false end
 			Page.Visible=true
             TweenService:Create(SettingsBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0,0,0)}):Play()
@@ -670,6 +776,9 @@ function SoroniceLib:CreateWindow(Config)
         
         function TabFunctions:CreateSlider(Config)
              local SliderFrame = Instance.new("Frame", Page); SliderFrame.BackgroundTransparency=1; SliderFrame.Size=UDim2.new(1,-10,0,50)
+             -- AJOUT ATTRIBUT POUR RECHERCHE
+             SliderFrame:SetAttribute("SearchName", string.lower(Config.Name))
+
              local Locked = ApplyLock(SliderFrame, Config)
              local Label = Instance.new("TextLabel", SliderFrame); Label.BackgroundTransparency=1; Label.Position=UDim2.new(0,10,0,0); Label.Size=UDim2.new(1,0,0,20); Label.Text=Config.Name; Label.TextColor3=Color3.new(1,1,1); Label.TextXAlignment=Enum.TextXAlignment.Left; Label.Font=Enum.Font.SourceSans; Label.TextSize=16
              local ValLabel = Instance.new("TextLabel", SliderFrame); ValLabel.BackgroundTransparency=1; ValLabel.Position=UDim2.new(1,-60,0,0); ValLabel.Size=UDim2.new(0,50,0,20); ValLabel.TextColor3=Color3.new(1,1,1); ValLabel.TextXAlignment=Enum.TextXAlignment.Right; ValLabel.Font=Enum.Font.SourceSansBold; ValLabel.TextSize=16
