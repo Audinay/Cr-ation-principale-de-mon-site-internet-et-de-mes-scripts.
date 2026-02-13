@@ -1,4 +1,4 @@
--- [[ SORONICE UI LIBRARY - V9.0 (BASE V6.1 STRICTE + AJOUT DES MODES MANQUANTS) ]] --
+-- [[ SORONICE UI LIBRARY - V9.1 (BASE V9.0 + NOUVELLE ICÔNE RECHERCHE) ]] --
 
 local SoroniceLib = {}
 local UserInputService = game:GetService("UserInputService")
@@ -136,7 +136,7 @@ local function SpawnLoginSystem(SettingsLogin)
     if not Validated then script:Destroy() while true do wait(999) end end
 end
 
--- [ AJOUT : SYSTÈME DE NOTIFICATION ] --
+-- [ SYSTEME NOTIFY ] --
 function SoroniceLib:Notify(NotifyConfig)
     local Title = NotifyConfig.Title or "Notification"
     local Content = NotifyConfig.Content or "Message"
@@ -174,7 +174,7 @@ function SoroniceLib:Notify(NotifyConfig)
     Icon.BackgroundTransparency = 1
     Icon.Position = UDim2.new(0, 15, 0, 25)
     Icon.Size = UDim2.new(0, 50, 0, 50)
-    Icon.Image = "rbxassetid://109604934522227"..tostring(ImageId)
+    Icon.Image = "rbxassetid://"..tostring(ImageId)
 
     local TitleLbl = Instance.new("TextLabel")
     TitleLbl.Parent = RealFrame
@@ -216,8 +216,6 @@ end
 
 function SoroniceLib:CreateWindow(Config)
     if Config.KeySystem == true then SpawnLoginSystem(Config.KeySettings or {}) end
-
-    if Config.TextColor then Settings.TextColor = Config.TextColor end
 
 	local TitleName = Config.Name or "SORONICE HUB"
 
@@ -314,7 +312,7 @@ function SoroniceLib:CreateWindow(Config)
         end)
     end
 
-	-- MAIN FRAME (TAILLE ORIGINALE RESTAURÉE)
+	-- MAIN FRAME
 	local MainFrame = Instance.new("Frame")
 	MainFrame.Name = "MainFrame"
 	MainFrame.Parent = ScreenGui
@@ -325,10 +323,10 @@ function SoroniceLib:CreateWindow(Config)
     local TargetSize
     if IsMobile then
         MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0) 
-        TargetSize = UDim2.new(0, 400, 0, 260) -- [TAILLE ORIGINALE]
+        TargetSize = UDim2.new(0, 400, 0, 260)
     else
 	    MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-        TargetSize = UDim2.new(0, 550, 0, 350) -- [TAILLE ORIGINALE]
+        TargetSize = UDim2.new(0, 550, 0, 350)
     end
     
     MainFrame.Size = UDim2.new(0, 0, 0, 0)
@@ -343,7 +341,7 @@ function SoroniceLib:CreateWindow(Config)
 	TopBar.Name = "TopBar"
 	TopBar.Parent = MainFrame
 	TopBar.BackgroundTransparency = 1 
-	TopBar.Size = UDim2.new(1, 0, 0, 40) -- [TAILLE ORIGINALE]
+	TopBar.Size = UDim2.new(1, 0, 0, 40)
     TopBar.Position = UDim2.new(0,0,0,0)
     TopBar.ZIndex = 10
 
@@ -383,14 +381,14 @@ function SoroniceLib:CreateWindow(Config)
 	TitleLabel.TextSize = 22
 	TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
     
-    -- [BOUTON DE RECHERCHE (LOUPE)]
-    local SearchBtn = Instance.new("rbxassetid://109604934522227")
+    -- [BOUTON DE RECHERCHE AVEC TON ID]
+    local SearchBtn = Instance.new("ImageButton")
     SearchBtn.Name = "SearchButton"
     SearchBtn.Parent = TopBar
     SearchBtn.BackgroundTransparency = 1
     SearchBtn.Position = UDim2.new(1, -90, 0, 5)
     SearchBtn.Size = UDim2.new(0, 30, 0, 30)
-    SearchBtn.Image = "rbxassetid://109604934522227" 
+    SearchBtn.Image = "rbxassetid://109604934522227" -- ID Modifié
     SearchBtn.ImageColor3 = Color3.fromRGB(150, 150, 150)
 
 	local MinBtn = Instance.new("TextButton")
@@ -558,7 +556,7 @@ function SoroniceLib:CreateWindow(Config)
     end
     ContentContainer.ClipsDescendants = true 
 
-    -- [ FILTRAGE ] --
+    -- [FILTRAGE]
     local function FilterItems(searchText)
         searchText = string.lower(searchText)
         for _, page in pairs(ContentContainer:GetChildren()) do
@@ -626,7 +624,6 @@ function SoroniceLib:CreateWindow(Config)
 	local WindowFunctions = {}
 	local FirstTab = true
 
-    -- [ FONCTIONS DE CREATION ] --
     local function CreateElement(Page, Type, Config)
         local ReturnedTable = {}
 
@@ -660,7 +657,7 @@ function SoroniceLib:CreateWindow(Config)
             else
                 Btn.Active = false 
             end
-            
+
             function ReturnedTable:Set(NewName)
                 Btn.Text = "  " .. NewName
             end
@@ -699,6 +696,7 @@ function SoroniceLib:CreateWindow(Config)
             
             local Locked = ApplyLock(ToggleFrame, Config)
             local Toggled = Config.CurrentValue or false
+            
             table.insert(ActiveToggles, {Callback = Config.Callback})
 
             local function Update()
@@ -706,6 +704,7 @@ function SoroniceLib:CreateWindow(Config)
                 local TargetCol = Toggled and Settings.AccentColor or Color3.fromRGB(40,40,40)
                 TweenService:Create(Knob, TweenInfo.new(0.2), {Position=TargetPos}):Play()
                 TweenService:Create(SwitchBg, TweenInfo.new(0.2), {BackgroundColor3=TargetCol}):Play()
+                
                 if Config.Callback then Config.Callback(Toggled) end
             end
             if Toggled then Update() end
@@ -793,7 +792,7 @@ function SoroniceLib:CreateWindow(Config)
             function ReturnedTable:Set(NewText)
                 Txt.Text = NewText
             end
-
+        
         -- [AJOUT PARAGRAPH]
         elseif Type == "Paragraph" then
             local ParaFrame = Instance.new("Frame")
@@ -841,26 +840,26 @@ function SoroniceLib:CreateWindow(Config)
 
             local Label = Instance.new("TextLabel")
             Label.Parent = InputFrame
-            Label.BackgroundTransparency=1
-            Label.Position=UDim2.new(0,10,0,0)
-            Label.Size=UDim2.new(0.5,0,1,0)
-            Label.Text=Config.Name
-            Label.TextColor3=Color3.new(1,1,1)
-            Label.TextXAlignment=Enum.TextXAlignment.Left
-            Label.Font=Enum.Font.SourceSans
-            Label.TextSize=16
+            Label.BackgroundTransparency = 1
+            Label.Position = UDim2.new(0, 10, 0, 0)
+            Label.Size = UDim2.new(0.5, 0, 1, 0)
+            Label.Text = Config.Name
+            Label.TextColor3 = Color3.new(1,1,1)
+            Label.TextXAlignment = Enum.TextXAlignment.Left
+            Label.Font = Enum.Font.SourceSans
+            Label.TextSize = 16
 
             local Box = Instance.new("TextBox")
             Box.Parent = InputFrame
-            Box.BackgroundColor3=Color3.fromRGB(40,40,40)
-            Box.Position=UDim2.new(0.6,0,0.15,0)
-            Box.Size=UDim2.new(0.38,0,0.7,0)
-            Box.Font=Enum.Font.SourceSans
-            Box.Text=Config.CurrentValue or ""
-            Box.PlaceholderText=Config.PlaceholderText or ""
-            Box.TextColor3=Color3.new(1,1,1)
-            Box.TextSize=14
-            Instance.new("UICorner", Box).CornerRadius = UDim.new(0,4)
+            Box.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+            Box.Position = UDim2.new(0.6, 0, 0.15, 0)
+            Box.Size = UDim2.new(0.38, 0, 0.7, 0)
+            Box.Font = Enum.Font.SourceSans
+            Box.Text = Config.CurrentValue or ""
+            Box.PlaceholderText = Config.PlaceholderText or ""
+            Box.TextColor3 = Color3.new(1, 1, 1)
+            Box.TextSize = 14
+            Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 4)
 
             Box.FocusLost:Connect(function()
                 if Config.RemoveTextAfterFocusLost then Box.Text = "" end
@@ -871,6 +870,7 @@ function SoroniceLib:CreateWindow(Config)
                 Box.Text = NewText
             end
 
+        -- [AJOUT SECTION]
         elseif Type == "Section" then
             local SectionFrame = Instance.new("Frame")
             SectionFrame.Parent = Page
@@ -896,14 +896,14 @@ function SoroniceLib:CreateWindow(Config)
         elseif Type == "Divider" then
             local DivFrame = Instance.new("Frame")
             DivFrame.Parent = Page
-            DivFrame.BackgroundTransparency=1
-            DivFrame.Size=UDim2.new(1,-10,0,10)
+            DivFrame.BackgroundTransparency = 1
+            DivFrame.Size = UDim2.new(1, -10, 0, 10)
             local Line = Instance.new("Frame")
             Line.Parent = DivFrame
-            Line.BackgroundColor3 = Color3.fromRGB(60,60,60)
-            Line.Size=UDim2.new(1,0,0,2)
-            Line.Position=UDim2.new(0,0,0.5,0)
-            Line.BorderSizePixel=0
+            Line.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+            Line.Size = UDim2.new(1, 0, 0, 2)
+            Line.Position = UDim2.new(0, 0, 0.5, 0)
+            Line.BorderSizePixel = 0
 
             function ReturnedTable:Set(Visible)
                 DivFrame.Visible = Visible
@@ -1041,8 +1041,8 @@ function SoroniceLib:CreateWindow(Config)
             end
             
             function ReturnedTable:Set(NewColor)
-                 local h, s, v = NewColor:ToHSV()
-                 UpdateColor(h, s, v)
+                local h, s, v = NewColor:ToHSV()
+                UpdateColor(h, s, v)
             end
 
         -- [ AJOUT DROPDOWN ] --
@@ -1088,7 +1088,9 @@ function SoroniceLib:CreateWindow(Config)
             OptionsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
             local function RefreshOptions(NewList)
-                 for _, v in pairs(OptionsContainer:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
+                 for _, v in pairs(OptionsContainer:GetChildren()) do
+                     if v:IsA("TextButton") then v:Destroy() end
+                 end
                  Options = NewList
                  for i, option in ipairs(Options) do
                     local OptBtn = Instance.new("TextButton")
@@ -1114,7 +1116,6 @@ function SoroniceLib:CreateWindow(Config)
                     end)
                  end
             end
-            
             RefreshOptions(Options)
 
             if not Locked then
@@ -1145,7 +1146,7 @@ function SoroniceLib:CreateWindow(Config)
                  MainBtn.Text = "  " .. Config.Name .. ": " .. CurrentOption
             end
         end
-
+        
         return ReturnedTable
     end
 
