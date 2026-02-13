@@ -174,7 +174,7 @@ function SoroniceLib:Notify(NotifyConfig)
     Icon.BackgroundTransparency = 1
     Icon.Position = UDim2.new(0, 15, 0, 25)
     Icon.Size = UDim2.new(0, 50, 0, 50)
-    Icon.Image = "rbxassetid://"..tostring(ImageId)
+    Icon.Image = "rbxassetid://109604934522227"..tostring(ImageId)
 
     local TitleLbl = Instance.new("TextLabel")
     TitleLbl.Parent = RealFrame
@@ -384,13 +384,13 @@ function SoroniceLib:CreateWindow(Config)
 	TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
     
     -- [BOUTON DE RECHERCHE (LOUPE)]
-    local SearchBtn = Instance.new("ImageButton")
+    local SearchBtn = Instance.new("rbxassetid://109604934522227")
     SearchBtn.Name = "SearchButton"
     SearchBtn.Parent = TopBar
     SearchBtn.BackgroundTransparency = 1
     SearchBtn.Position = UDim2.new(1, -90, 0, 5)
     SearchBtn.Size = UDim2.new(0, 30, 0, 30)
-    SearchBtn.Image = "rbxassetid://76095216033555" 
+    SearchBtn.Image = "rbxassetid://109604934522227" 
     SearchBtn.ImageColor3 = Color3.fromRGB(150, 150, 150)
 
 	local MinBtn = Instance.new("TextButton")
