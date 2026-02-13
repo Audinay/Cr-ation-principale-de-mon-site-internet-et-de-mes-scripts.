@@ -1,5 +1,4 @@
--- [[ SORONICE UI LIBRARY - V8.0 (VERSION COMPLÈTE & ÉTENDUE) ]] --
--- [[ INCLUS : HEADER PRO, STATS, RECHERCHE, DROPDOWN, INPUT, PARAGRAPH, DIVIDER, NOTIFY, SET FUNCTIONS ]] --
+-- [[ SORONICE UI LIBRARY - V8.1 (CORRECTIF DÉCALAGE SCROLLBAR) ]] --
 
 local SoroniceLib = {}
 
@@ -25,7 +24,7 @@ local Settings = {
 	AccentColor = Color3.fromRGB(0, 54, 203),
     TextColor = Color3.fromRGB(255, 255, 255),
     SubTextColor = Color3.fromRGB(180, 180, 180),
-    StatsColor = Color3.fromRGB(35, 35, 35) -- Couleur de fond des stats
+    StatsColor = Color3.fromRGB(35, 35, 35) 
 }
 
 -- [ LISTE DES ÉLÉMENTS ACTIFS ] --
@@ -173,14 +172,14 @@ local function SpawnLoginSystem(SettingsLogin)
     if not Validated then script:Destroy() while true do wait(999) end end
 end
 
--- [ AJOUT : SYSTÈME DE NOTIFICATION (STYLE RAYFIELD) ] --
+-- [ SYSTEME NOTIFY ] --
 function SoroniceLib:Notify(NotifyConfig)
     local Title = NotifyConfig.Title or "Notification"
     local Content = NotifyConfig.Content or "Message"
     local Duration = NotifyConfig.Duration or 6.5
     local ImageId = NotifyConfig.Image or 4483362458
     
-    if ImageId == "rewind" then ImageId = 4483362458 end -- Compatibilité
+    if ImageId == "rewind" then ImageId = 4483362458 end
 
     local NotifGui = CoreGui:FindFirstChild("SoroniceNotifs")
     if not NotifGui then
@@ -197,7 +196,7 @@ function SoroniceLib:Notify(NotifyConfig)
     Frame.BorderSizePixel = 0
     Frame.Position = UDim2.new(1, 10, 0.8, -((#NotifGui:GetChildren() - 1) * 110))
     Frame.Size = UDim2.new(0, 280, 0, 100)
-    Frame.BackgroundTransparency = 1 -- Pour l'animation d'entrée
+    Frame.BackgroundTransparency = 1
 
     local RealFrame = Instance.new("Frame")
     RealFrame.Parent = Frame
@@ -239,11 +238,9 @@ function SoroniceLib:Notify(NotifyConfig)
     DescLbl.TextWrapped = true
     DescLbl.TextYAlignment = Enum.TextYAlignment.Top
 
-    -- Animation d'entrée
     TweenService:Create(Frame, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position = UDim2.new(1, -300, 0.8, -((#NotifGui:GetChildren() - 1) * 110))}):Play()
     TweenService:Create(Frame, TweenInfo.new(0.5), {BackgroundTransparency = 0}):Play()
 
-    -- Disparition Auto
     task.spawn(function()
         wait(Duration)
         TweenService:Create(Frame, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Position = UDim2.new(1, 10, 0.8, -((#NotifGui:GetChildren() - 1) * 110))}):Play()
@@ -252,15 +249,12 @@ function SoroniceLib:Notify(NotifyConfig)
     end)
 end
 
-
--- [ CRÉATION DE LA FENÊTRE PRINCIPALE ] --
-
+-- [ CRÉATION FENÊTRE ] --
 function SoroniceLib:CreateWindow(Config)
     if Config.KeySystem == true then 
         SpawnLoginSystem(Config.KeySettings or {}) 
     end
 
-    -- Application des couleurs étendues
     if Config.TextColor then Settings.TextColor = Config.TextColor end
 
 	local TitleName = Config.Name or "SORONICE HUB"
@@ -280,7 +274,6 @@ function SoroniceLib:CreateWindow(Config)
 	ScreenGui.Parent = CoreGui
     ScreenGui.ResetOnSpawn = false
 
-    -- [APPLY LOCK FUNCTION] --
     local function ApplyLock(TargetFrame, ElementConfig)
         if not ElementConfig then return false end
         
@@ -326,7 +319,6 @@ function SoroniceLib:CreateWindow(Config)
         return false 
     end
 
-    -- [BOUTON MAISON MOBILE] --
     local MobileOpenBtn = nil
     if IsMobile then
         MobileOpenBtn = Instance.new("ImageButton")
@@ -365,7 +357,6 @@ function SoroniceLib:CreateWindow(Config)
         end)
     end
 
-	-- [ MAIN FRAME ] --
 	local MainFrame = Instance.new("Frame")
 	MainFrame.Name = "MainFrame"
 	MainFrame.Parent = ScreenGui
@@ -398,7 +389,6 @@ function SoroniceLib:CreateWindow(Config)
     TopBar.Position = UDim2.new(0,0,0,0)
     TopBar.ZIndex = 10
 
-    -- [ HEADER GAUCHE ] --
     local LeftContainer = Instance.new("Frame")
     LeftContainer.Parent = TopBar
     LeftContainer.BackgroundTransparency = 1
@@ -454,7 +444,6 @@ function SoroniceLib:CreateWindow(Config)
         GameLabel.Text = GameNameText 
     end)
 
-    -- [ HEADER DROITE ] --
     local RightContainer = Instance.new("Frame")
     RightContainer.Parent = TopBar
     RightContainer.BackgroundTransparency = 1
@@ -533,13 +522,12 @@ function SoroniceLib:CreateWindow(Config)
         end)
     end
 
-    -- [ BOUTONS TOPBAR ] --
     local SearchBtn = Instance.new("ImageButton")
     SearchBtn.Name = "SearchButton"
     SearchBtn.Parent = RightContainer
     SearchBtn.BackgroundTransparency = 1
     SearchBtn.Size = UDim2.new(0, 28, 0, 28)
-    SearchBtn.Image = "rbxassetid://76095216033555" -- Ton ID
+    SearchBtn.Image = "rbxassetid://76095216033555" 
     SearchBtn.ImageColor3 = Settings.SubTextColor
     SearchBtn.LayoutOrder = 10
 
@@ -565,7 +553,6 @@ function SoroniceLib:CreateWindow(Config)
 	CloseBtn.TextSize = 20
     CloseBtn.LayoutOrder = 12
 
-    -- [ DRAGGING ] --
 	local dragging, dragInput, dragStart, startPos
 	TopBar.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -598,7 +585,6 @@ function SoroniceLib:CreateWindow(Config)
 		end
 	end)
 
-    -- [ VISIBILITÉ ] --
 	local IsHidden = false
     local isAnimating = false
 
@@ -641,7 +627,6 @@ function SoroniceLib:CreateWindow(Config)
         ScreenGui:Destroy() 
     end)
 
-    -- [ SEARCH BAR ] --
     local SearchBarFrame = Instance.new("Frame")
     SearchBarFrame.Name = "SearchBar"
     SearchBarFrame.Parent = MainFrame
@@ -662,7 +647,7 @@ function SoroniceLib:CreateWindow(Config)
     SearchInput.Font = Enum.Font.SourceSans
     SearchInput.PlaceholderText = "Rechercher..."
     SearchInput.Text = ""
-    SearchInput.TextColor3 = Settings.TextColor
+    SearchInput.TextColor3 = Color3.new(1, 1, 1)
     SearchInput.TextSize = 16
     SearchInput.TextXAlignment = Enum.TextXAlignment.Left
     SearchInput.ZIndex = 6
@@ -736,14 +721,15 @@ function SoroniceLib:CreateWindow(Config)
 	ContentContainer.Parent = MainFrame
 	ContentContainer.BackgroundTransparency = 1
 	ContentContainer.Position = UDim2.new(0, 80, 0, 60)
+    
+    -- [CORRECTION TAILLE CONTENT POUR EVITER LE TROU À DROITE]
     if IsMobile then
-        ContentContainer.Size = UDim2.new(0, 310, 0, 200)
+        ContentContainer.Size = UDim2.new(0, 320, 0, 210) 
     else
-	    ContentContainer.Size = UDim2.new(0, 460, 0, 290)
+	    ContentContainer.Size = UDim2.new(0, 480, 0, 300) 
     end
     ContentContainer.ClipsDescendants = true 
 
-    -- [ FILTRAGE ] --
     local function FilterItems(searchText)
         searchText = string.lower(searchText)
         for _, page in pairs(ContentContainer:GetChildren()) do
@@ -776,19 +762,21 @@ function SoroniceLib:CreateWindow(Config)
 	SettingsBtn.Text = ""
     SettingsBtn.ZIndex = 2 
     Instance.new("UICorner", SettingsBtn).CornerRadius = UDim.new(0, 8)
-	local SettingsIcon = Instance.new("ImageLabel")
+	
+    local SettingsIcon = Instance.new("ImageLabel")
 	SettingsIcon.Parent = SettingsBtn
 	SettingsIcon.BackgroundTransparency = 1
 	SettingsIcon.Position = UDim2.new(0, 5, 0, 5)
 	SettingsIcon.Size = UDim2.new(0, 35, 0, 35)
 	SettingsIcon.Image = "rbxassetid://74182569229556"
+    SettingsIcon.ImageColor3 = Settings.SubTextColor
 
     local SettingsPage = Instance.new("ScrollingFrame")
     SettingsPage.Name = "Settings_Page"
     SettingsPage.Parent = ContentContainer
     SettingsPage.BackgroundTransparency = 1
     SettingsPage.Size = UDim2.new(1, 0, 1, 0)
-    SettingsPage.ScrollBarThickness = 4
+    SettingsPage.ScrollBarThickness = 2 -- Scrollbar fine
     SettingsPage.Visible = false 
     SettingsPage.AutomaticCanvasSize = Enum.AutomaticSize.Y
     SettingsPage.CanvasSize = UDim2.new(0,0,0,0)
@@ -799,6 +787,7 @@ function SoroniceLib:CreateWindow(Config)
     SettingsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
     SettingsBtn.MouseButton1Click:Connect(function()
+        if SearchOpen then ToggleSearch() end
         for _, v in pairs(ContentContainer:GetChildren()) do v.Visible = false end
         SettingsPage.Visible = true
         for _, btn in pairs(SidebarScroll:GetChildren()) do
@@ -810,111 +799,10 @@ function SoroniceLib:CreateWindow(Config)
 	local WindowFunctions = {}
 	local FirstTab = true
 
-    -- [ ELEMENT CREATION ] --
     local function CreateElement(Page, Type, Config)
         local ReturnedTable = {} 
 
-        -- [ AJOUT INPUT (NEW) ] --
-        if Type == "Input" then
-            local InputFrame = Instance.new("Frame")
-            InputFrame.Parent = Page
-            InputFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
-            InputFrame.Size = UDim2.new(1, -10, 0, 35)
-            Instance.new("UICorner", InputFrame).CornerRadius = UDim.new(0,6)
-            InputFrame:SetAttribute("SearchName", string.lower(Config.Name))
-
-            local Label = Instance.new("TextLabel")
-            Label.Parent = InputFrame
-            Label.BackgroundTransparency = 1
-            Label.Position = UDim2.new(0, 10, 0, 0)
-            Label.Size = UDim2.new(0.5, 0, 1, 0)
-            Label.Text = Config.Name
-            Label.TextColor3 = Settings.TextColor
-            Label.TextXAlignment = Enum.TextXAlignment.Left
-            Label.Font = Enum.Font.SourceSans
-            Label.TextSize = 16
-
-            local Box = Instance.new("TextBox")
-            Box.Parent = InputFrame
-            Box.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-            Box.Position = UDim2.new(0.6, 0, 0.15, 0)
-            Box.Size = UDim2.new(0.38, 0, 0.7, 0)
-            Box.Font = Enum.Font.SourceSans
-            Box.Text = Config.CurrentValue or ""
-            Box.PlaceholderText = Config.PlaceholderText or ""
-            Box.TextColor3 = Color3.new(1, 1, 1)
-            Box.TextSize = 14
-            Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 4)
-
-            Box.FocusLost:Connect(function()
-                if Config.RemoveTextAfterFocusLost then 
-                    Box.Text = "" 
-                end
-                if Config.Callback then 
-                    Config.Callback(Box.Text) 
-                end
-            end)
-
-            function ReturnedTable:Set(NewText)
-                Box.Text = NewText
-            end
-
-        -- [ AJOUT PARAGRAPH (NEW) ] --
-        elseif Type == "Paragraph" then
-            local ParaFrame = Instance.new("Frame")
-            ParaFrame.Parent = Page
-            ParaFrame.BackgroundTransparency = 1
-            ParaFrame.Size = UDim2.new(1, -10, 0, 60)
-            ParaFrame:SetAttribute("SearchName", string.lower(Config.Title))
-
-            local Title = Instance.new("TextLabel")
-            Title.Parent = ParaFrame
-            Title.BackgroundTransparency = 1
-            Title.Size = UDim2.new(1, 0, 0, 20)
-            Title.Position = UDim2.new(0, 10, 0, 0)
-            Title.Text = Config.Title
-            Title.TextColor3 = Settings.AccentColor
-            Title.TextXAlignment = Enum.TextXAlignment.Left
-            Title.Font = Enum.Font.SourceSansBold
-            Title.TextSize = 16
-
-            local Content = Instance.new("TextLabel")
-            Content.Parent = ParaFrame
-            Content.BackgroundTransparency = 1
-            Content.Size = UDim2.new(1, -20, 0, 40)
-            Content.Position = UDim2.new(0, 10, 0, 20)
-            Content.Text = Config.Content
-            Content.TextColor3 = Color3.new(0.8, 0.8, 0.8)
-            Content.TextXAlignment = Enum.TextXAlignment.Left
-            Content.Font = Enum.Font.SourceSans
-            Content.TextSize = 14
-            Content.TextWrapped = true
-
-            function ReturnedTable:Set(NewConfig)
-                if NewConfig.Title then Title.Text = NewConfig.Title end
-                if NewConfig.Content then Content.Text = NewConfig.Content end
-            end
-
-        -- [ AJOUT DIVIDER (NEW) ] --
-        elseif Type == "Divider" then
-            local DivFrame = Instance.new("Frame")
-            DivFrame.Parent = Page
-            DivFrame.BackgroundTransparency = 1
-            DivFrame.Size = UDim2.new(1, -10, 0, 10)
-
-            local Line = Instance.new("Frame")
-            Line.Parent = DivFrame
-            Line.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-            Line.Size = UDim2.new(1, 0, 0, 2)
-            Line.Position = UDim2.new(0, 0, 0.5, 0)
-            Line.BorderSizePixel = 0
-
-            function ReturnedTable:Set(Visible)
-                DivFrame.Visible = Visible
-            end
-
-        -- [ BUTTON ] --
-        elseif Type == "Button" then
+        if Type == "Button" then
             local BtnFrame = Instance.new("Frame")
             BtnFrame.Parent = Page
 			BtnFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
@@ -949,7 +837,6 @@ function SoroniceLib:CreateWindow(Config)
                 Btn.Text = "  " .. NewName
             end
 
-        -- [ TOGGLE ] --
         elseif Type == "Toggle" then
             local ToggleFrame = Instance.new("Frame")
             ToggleFrame.Parent = Page
@@ -1014,7 +901,6 @@ function SoroniceLib:CreateWindow(Config)
                 Update()
             end
 
-        -- [ KEYBIND ] --
         elseif Type == "Keybind" then
             local BindFrame = Instance.new("Frame")
             BindFrame.Parent = Page
@@ -1062,7 +948,6 @@ function SoroniceLib:CreateWindow(Config)
                 BindBtn.Text = KeyName
             end
 
-        -- [ LABEL ] --
         elseif Type == "Label" then
             local LabelFrame = Instance.new("Frame")
             LabelFrame.Parent = Page
@@ -1085,7 +970,85 @@ function SoroniceLib:CreateWindow(Config)
                 Txt.Text = NewText
             end
 
-        -- [ SECTION ] --
+        elseif Type == "Paragraph" then
+            local ParaFrame = Instance.new("Frame")
+            ParaFrame.Parent = Page
+            ParaFrame.BackgroundTransparency = 1
+            ParaFrame.Size = UDim2.new(1, -10, 0, 60)
+            ParaFrame:SetAttribute("SearchName", string.lower(Config.Title))
+
+            local Title = Instance.new("TextLabel")
+            Title.Parent = ParaFrame
+            Title.BackgroundTransparency = 1
+            Title.Size = UDim2.new(1, 0, 0, 20)
+            Title.Position = UDim2.new(0, 10, 0, 0)
+            Title.Text = Config.Title
+            Title.TextColor3 = Settings.AccentColor
+            Title.TextXAlignment = Enum.TextXAlignment.Left
+            Title.Font = Enum.Font.SourceSansBold
+            Title.TextSize = 16
+
+            local Content = Instance.new("TextLabel")
+            Content.Parent = ParaFrame
+            Content.BackgroundTransparency = 1
+            Content.Size = UDim2.new(1, -20, 0, 40)
+            Content.Position = UDim2.new(0, 10, 0, 20)
+            Content.Text = Config.Content
+            Content.TextColor3 = Color3.new(0.8, 0.8, 0.8)
+            Content.TextXAlignment = Enum.TextXAlignment.Left
+            Content.Font = Enum.Font.SourceSans
+            Content.TextSize = 14
+            Content.TextWrapped = true
+
+            function ReturnedTable:Set(NewConfig)
+                if NewConfig.Title then Title.Text = NewConfig.Title end
+                if NewConfig.Content then Content.Text = NewConfig.Content end
+            end
+
+        elseif Type == "Input" then
+            local InputFrame = Instance.new("Frame")
+            InputFrame.Parent = Page
+            InputFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+            InputFrame.Size = UDim2.new(1, -10, 0, 35)
+            Instance.new("UICorner", InputFrame).CornerRadius = UDim.new(0,6)
+            InputFrame:SetAttribute("SearchName", string.lower(Config.Name))
+
+            local Label = Instance.new("TextLabel")
+            Label.Parent = InputFrame
+            Label.BackgroundTransparency = 1
+            Label.Position = UDim2.new(0, 10, 0, 0)
+            Label.Size = UDim2.new(0.5, 0, 1, 0)
+            Label.Text = Config.Name
+            Label.TextColor3 = Settings.TextColor
+            Label.TextXAlignment = Enum.TextXAlignment.Left
+            Label.Font = Enum.Font.SourceSans
+            Label.TextSize = 16
+
+            local Box = Instance.new("TextBox")
+            Box.Parent = InputFrame
+            Box.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+            Box.Position = UDim2.new(0.6, 0, 0.15, 0)
+            Box.Size = UDim2.new(0.38, 0, 0.7, 0)
+            Box.Font = Enum.Font.SourceSans
+            Box.Text = Config.CurrentValue or ""
+            Box.PlaceholderText = Config.PlaceholderText or ""
+            Box.TextColor3 = Color3.new(1, 1, 1)
+            Box.TextSize = 14
+            Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 4)
+
+            Box.FocusLost:Connect(function()
+                if Config.RemoveTextAfterFocusLost then 
+                    Box.Text = "" 
+                end
+                if Config.Callback then 
+                    Config.Callback(Box.Text) 
+                end
+            end)
+
+            function ReturnedTable:Set(NewText)
+                Box.Text = NewText
+            end
+
         elseif Type == "Section" then
             local SectionFrame = Instance.new("Frame")
             SectionFrame.Parent = Page
@@ -1107,8 +1070,24 @@ function SoroniceLib:CreateWindow(Config)
             function ReturnedTable:Set(NewText)
                 Txt.Text = NewText
             end
+
+        elseif Type == "Divider" then
+            local DivFrame = Instance.new("Frame")
+            DivFrame.Parent = Page
+            DivFrame.BackgroundTransparency = 1
+            DivFrame.Size = UDim2.new(1, -10, 0, 10)
+
+            local Line = Instance.new("Frame")
+            Line.Parent = DivFrame
+            Line.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+            Line.Size = UDim2.new(1, 0, 0, 2)
+            Line.Position = UDim2.new(0, 0, 0.5, 0)
+            Line.BorderSizePixel = 0
+
+            function ReturnedTable:Set(Visible)
+                DivFrame.Visible = Visible
+            end
         
-        -- [ COLOR PICKER ] --
         elseif Type == "ColorPicker" then
             local ColorFrame = Instance.new("Frame")
             ColorFrame.Parent = Page
@@ -1181,6 +1160,7 @@ function SoroniceLib:CreateWindow(Config)
                 Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 4)
                 return Box
             end
+            
             local RBox = CreateInput("R", 30)
             local GBox = CreateInput("G", 60)
             local BBox = CreateInput("B", 90)
@@ -1322,7 +1302,7 @@ function SoroniceLib:CreateWindow(Config)
                 end
             end
             
-            RefreshOptions(Options) -- Init
+            RefreshOptions(Options) 
 
             if not Locked then
                 MainBtn.MouseButton1Click:Connect(function()
@@ -1356,7 +1336,6 @@ function SoroniceLib:CreateWindow(Config)
         return ReturnedTable 
     end
 
-    -- [ BOUTON TOGGLE AFK PAR DÉFAUT ] --
     CreateElement(SettingsPage, "Toggle", {
         Name = "💤 Mode AFK (Anti-Kick)",
         CurrentValue = false,
@@ -1403,7 +1382,7 @@ function SoroniceLib:CreateWindow(Config)
         Page.Parent = ContentContainer
         Page.BackgroundTransparency=1
         Page.Size=UDim2.new(1,0,1,0)
-        Page.ScrollBarThickness=6
+        Page.ScrollBarThickness=2 
         Page.Visible=FirstTab
         Page.AutomaticCanvasSize = Enum.AutomaticSize.Y 
         Page.CanvasSize = UDim2.new(0,0,0,0)
@@ -1452,7 +1431,7 @@ function SoroniceLib:CreateWindow(Config)
              Label.Position=UDim2.new(0,10,0,0)
              Label.Size=UDim2.new(1,0,0,20)
              Label.Text=Config.Name
-             Label.TextColor3=Color3.new(1,1,1)
+             Label.TextColor3=Settings.TextColor
              Label.TextXAlignment=Enum.TextXAlignment.Left
              Label.Font=Enum.Font.SourceSans
              Label.TextSize=16
@@ -1462,7 +1441,7 @@ function SoroniceLib:CreateWindow(Config)
              ValLabel.BackgroundTransparency=1
              ValLabel.Position=UDim2.new(1,-60,0,0)
              ValLabel.Size=UDim2.new(0,50,0,20)
-             ValLabel.TextColor3=Color3.new(1,1,1)
+             ValLabel.TextColor3=Settings.TextColor
              ValLabel.TextXAlignment=Enum.TextXAlignment.Right
              ValLabel.Font=Enum.Font.SourceSansBold
              ValLabel.TextSize=16
