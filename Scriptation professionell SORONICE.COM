@@ -556,7 +556,7 @@ function SoroniceLib:CreateWindow(Config)
     SearchBtn.BackgroundTransparency = 1
     SearchBtn.Position = UDim2.new(0, 0, 0, 5)
     SearchBtn.Size = UDim2.new(0, 30, 0, 30)
-    SearchBtn.Image = "rbxassetid://76095216033555" -- [NOUVEL ID]
+    SearchBtn.Image = "rbxassetid://126714054879307" -- [NOUVEL ID]
     SearchBtn.ImageColor3 = Color3.new(1,1,1) -- [BLANC]
     SearchBtn.ZIndex = 100 -- [FORCE AU PREMIER PLAN]
 
