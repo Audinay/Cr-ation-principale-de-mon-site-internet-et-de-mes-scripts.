@@ -369,7 +369,7 @@ function SoroniceLib:CreateWindow(Config)
     SearchBtn.Name = "SearchButton"
     SearchBtn.BackgroundTransparency = 1
     SearchBtn.Size = UDim2.new(0, 30, 0, 30)
-    SearchBtn.Image = "rbxassetid://76095216033555" 
+    SearchBtn.Image = "rbxassetid://109604934522227" 
     SearchBtn.ImageColor3 = Color3.fromRGB(150, 150, 150)
 
 	local MinBtn = Instance.new("TextButton", RightContainer)
