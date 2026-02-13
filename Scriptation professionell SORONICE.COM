@@ -1,5 +1,4 @@
--- [[ SORONICE UI LIBRARY - V10.1 (VERSION LONGUE / NON-COMPRESSÉE) ]] --
--- [[ INCLUS : HEADER PRO, STATS, LOGO, RECHERCHE VRAIE ID, DROPDOWN, TOUS LES MODES ]] --
+-- [[ SORONICE UI LIBRARY - V11.0 (VERSION DÉPLIÉE / UNCOMPRESSED) ]] --
 
 local SoroniceLib = {}
 
@@ -176,7 +175,7 @@ local function SpawnLoginSystem(SettingsLogin)
     end
 end
 
--- [ SYSTEME NOTIFY ] --
+-- [ SYSTÈME NOTIFY ] --
 function SoroniceLib:Notify(NotifyConfig)
     local Title = NotifyConfig.Title or "Notification"
     local Content = NotifyConfig.Content or "Message"
@@ -344,6 +343,7 @@ function SoroniceLib:CreateWindow(Config)
         MobileOpenBtn.Visible = false 
         Instance.new("UICorner", MobileOpenBtn).CornerRadius = UDim.new(0, 12)
         local dragging_mob, dragInput_mob, dragStart_mob, startPos_mob
+        
         MobileOpenBtn.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                 dragging_mob = true
@@ -351,17 +351,20 @@ function SoroniceLib:CreateWindow(Config)
                 startPos_mob = MobileOpenBtn.Position
             end
         end)
+        
         MobileOpenBtn.InputChanged:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
                 dragInput_mob = input
             end
         end)
+        
         UserInputService.InputChanged:Connect(function(input)
             if input == dragInput_mob and dragging_mob then
                 local delta = input.Position - dragStart_mob
                 MobileOpenBtn.Position = UDim2.new(startPos_mob.X.Scale, startPos_mob.X.Offset + delta.X, startPos_mob.Y.Scale, startPos_mob.Y.Offset + delta.Y)
             end
         end)
+        
         UserInputService.InputEnded:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                 dragging_mob = false
@@ -369,7 +372,7 @@ function SoroniceLib:CreateWindow(Config)
         end)
     end
 
-	-- MAIN FRAME (TAILLE D'ORIGINE - 550px)
+	-- [ MAIN FRAME : TAILLE D'ORIGINE - 550px STRICTE ]
 	local MainFrame = Instance.new("Frame")
 	MainFrame.Name = "MainFrame"
 	MainFrame.Parent = ScreenGui
@@ -380,10 +383,10 @@ function SoroniceLib:CreateWindow(Config)
     local TargetSize
     if IsMobile then
         MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0) 
-        TargetSize = UDim2.new(0, 400, 0, 260) -- Taille Mobile Originale
+        TargetSize = UDim2.new(0, 400, 0, 260) 
     else
 	    MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-        TargetSize = UDim2.new(0, 550, 0, 350) -- Taille PC Originale (550)
+        TargetSize = UDim2.new(0, 550, 0, 350) 
     end
     
     MainFrame.Size = UDim2.new(0, 0, 0, 0)
@@ -398,11 +401,11 @@ function SoroniceLib:CreateWindow(Config)
 	TopBar.Name = "TopBar"
 	TopBar.Parent = MainFrame
 	TopBar.BackgroundTransparency = 1 
-	TopBar.Size = UDim2.new(1, 0, 0, 40) -- Hauteur Originale
+	TopBar.Size = UDim2.new(1, 0, 0, 40) 
     TopBar.Position = UDim2.new(0,0,0,0)
     TopBar.ZIndex = 10
 
-    -- [ HEADER GAUCHE ] --
+    -- [ HEADER GAUCHE ]
     local LeftContainer = Instance.new("Frame")
     LeftContainer.Parent = TopBar
     LeftContainer.BackgroundTransparency = 1
@@ -450,7 +453,7 @@ function SoroniceLib:CreateWindow(Config)
     GameLabel.Font = Enum.Font.SourceSans
     GameLabel.Text = GameNameText 
     GameLabel.TextColor3 = Settings.AccentColor
-    GameLabel.TextSize = 14
+    GameLabel.TextSize = 13
     GameLabel.TextXAlignment = Enum.TextXAlignment.Left
     
     task.spawn(function() 
@@ -458,7 +461,7 @@ function SoroniceLib:CreateWindow(Config)
         GameLabel.Text = GameNameText 
     end)
 
-    -- [ HEADER DROITE ] --
+    -- [ HEADER DROITE ]
     local RightContainer = Instance.new("Frame")
     RightContainer.Parent = TopBar
     RightContainer.BackgroundTransparency = 1
@@ -537,16 +540,16 @@ function SoroniceLib:CreateWindow(Config)
         end)
     end
 
-    -- [ BOUTONS TOPBAR ] --
+    -- [ BOUTONS TOPBAR AVEC RECHERCHE FIXÉE ] --
     local SearchBtn = Instance.new("ImageButton")
     SearchBtn.Name = "SearchButton"
     SearchBtn.Parent = RightContainer
     SearchBtn.BackgroundTransparency = 1
     SearchBtn.Size = UDim2.new(0, 28, 0, 28)
-    SearchBtn.Image = "rbxassetid://109604934522227" -- [TON ID]
-    SearchBtn.ImageColor3 = Color3.new(1,1,1) -- [BLANC POUR ÊTRE VISIBLE]
-    SearchBtn.ImageTransparency = 0
-    SearchBtn.ZIndex = 100 -- [AU DESSUS DE TOUT]
+    SearchBtn.Image = "rbxassetid://109604934522227" 
+    SearchBtn.ImageColor3 = Color3.new(1,1,1) 
+    SearchBtn.ImageTransparency = 0 
+    SearchBtn.ZIndex = 100 
     SearchBtn.LayoutOrder = 10
 
 	local MinBtn = Instance.new("TextButton")
@@ -571,38 +574,41 @@ function SoroniceLib:CreateWindow(Config)
 	CloseBtn.TextSize = 20
     CloseBtn.LayoutOrder = 12
 
+    -- [ DRAGGING GLOBAL CORRIGÉ : FONCTIONNE PARTOUT SAUF SUR LES BOUTONS ] --
 	local dragging, dragInput, dragStart, startPos
-	TopBar.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            local overButton = false
-            -- Si on est sur le container de droite (Boutons), on ne drag pas
-            if input.Position.X > RightContainer.AbsolutePosition.X then 
-                overButton = true 
+    
+    local function StartDrag(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            local isOverButton = false
+            if input.Position.X >= SearchBtn.AbsolutePosition.X then 
+                isOverButton = true 
             end
             
-            if not overButton then
-    			dragging = true
-	    		dragStart = input.Position
-		    	startPos = MainFrame.Position
+            if not isOverButton then
+                dragging = true
+                dragStart = input.Position
+                startPos = MainFrame.Position
             end
-		end
-	end)
+        end
+    end
+
+	TopBar.InputBegan:Connect(StartDrag)
 	TopBar.InputChanged:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-			dragInput = input
-		end
-	end)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
 	UserInputService.InputChanged:Connect(function(input)
-		if input == dragInput and dragging then
-			local delta = input.Position - dragStart
-			MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-		end
-	end)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
 	UserInputService.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			dragging = false
-		end
-	end)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
 
 	local IsHidden = false
     local isAnimating = false
@@ -617,9 +623,13 @@ function SoroniceLib:CreateWindow(Config)
             closeT:Play()
             closeT.Completed:Wait()
             MainFrame.Visible = false
-            if IsMobile and MobileOpenBtn then MobileOpenBtn.Visible = true end
+            if IsMobile and MobileOpenBtn then 
+                MobileOpenBtn.Visible = true 
+            end
         else
-            if IsMobile and MobileOpenBtn then MobileOpenBtn.Visible = false end
+            if IsMobile and MobileOpenBtn then 
+                MobileOpenBtn.Visible = false 
+            end
             MainFrame.Visible = true
             local openT = TweenService:Create(MainFrame, TweenInfo.new(0.7, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = TargetSize})
             openT:Play()
@@ -629,9 +639,13 @@ function SoroniceLib:CreateWindow(Config)
     end
 
 	MinBtn.MouseButton1Click:Connect(ToggleVisibility)
-    if IsMobile and MobileOpenBtn then MobileOpenBtn.MouseButton1Click:Connect(ToggleVisibility) end
+    if IsMobile and MobileOpenBtn then 
+        MobileOpenBtn.MouseButton1Click:Connect(ToggleVisibility) 
+    end
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
-        if not IsMobile and not gameProcessed and input.KeyCode == Settings.Keybind then ToggleVisibility() end
+        if not IsMobile and not gameProcessed and input.KeyCode == Settings.Keybind then 
+            ToggleVisibility() 
+        end
     end)
 
 	CloseBtn.MouseButton1Click:Connect(function() 
@@ -646,7 +660,7 @@ function SoroniceLib:CreateWindow(Config)
         ScreenGui:Destroy() 
     end)
 
-    -- [ BARRE DE RECHERCHE ] --
+    -- [ SEARCH BAR ] --
     local SearchBarFrame = Instance.new("Frame")
     SearchBarFrame.Name = "SearchBar"
     SearchBarFrame.Parent = MainFrame
@@ -741,12 +755,10 @@ function SoroniceLib:CreateWindow(Config)
 	ContentContainer.Parent = MainFrame
 	ContentContainer.BackgroundTransparency = 1
 	ContentContainer.Position = UDim2.new(0, 80, 0, 50)
-    
-    -- [CORRECTION TAILLE CONTENT POUR EVITER LE TROU À DROITE]
     if IsMobile then
-        ContentContainer.Size = UDim2.new(0, 310, 0, 200) 
+        ContentContainer.Size = UDim2.new(0, 310, 0, 200)
     else
-	    ContentContainer.Size = UDim2.new(0, 460, 0, 290) 
+	    ContentContainer.Size = UDim2.new(0, 460, 0, 290)
     end
     ContentContainer.ClipsDescendants = true 
 
@@ -1190,7 +1202,7 @@ function SoroniceLib:CreateWindow(Config)
             HexBox.Font=Enum.Font.SourceSans
             HexBox.PlaceholderText="#Hex"
             HexBox.Text=""
-            HexBox.TextColor3=Settings.TextColor
+            HexBox.TextColor3=Color3.new(1,1,1)
             HexBox.TextSize=14
             Instance.new("UICorner", HexBox).CornerRadius = UDim.new(0, 4)
 
@@ -1280,7 +1292,6 @@ function SoroniceLib:CreateWindow(Config)
             OptionsContainer.Position = UDim2.new(0, 0, 0, 35)
             OptionsContainer.Size = UDim2.new(1, 0, 0, 0)
             OptionsContainer.Visible = false
-            
             local OptionsLayout = Instance.new("UIListLayout")
             OptionsLayout.Parent = OptionsContainer
             OptionsLayout.SortOrder = Enum.SortOrder.LayoutOrder
